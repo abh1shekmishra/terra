@@ -30,7 +30,7 @@ export const LAYERS: LayerMeta[] = [
     description: "Live air traffic",
     source: "OpenSky",
     color: "#38bdf8",
-    available: false,
+    available: true,
   },
   {
     id: "events",
