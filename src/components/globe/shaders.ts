@@ -71,14 +71,14 @@ export const earthFragmentShader = /* glsl */ `
     vec3 dayColor = texture2D(uDayMap, vUv).rgb;
     vec3 nightColor = texture2D(uNightMap, vUv).rgb;
 
-    vec3 litDay = dayColor * (diffuse * 1.08 + 0.04);
+    vec3 litDay = dayColor * (diffuse * 1.06 + 0.04);
 
     // Warm sunset band through the terminator.
     float sunset = smoothstep(-0.05, 0.18, geoAlignment) *
                    (1.0 - smoothstep(0.18, 0.5, geoAlignment));
     litDay += dayColor * vec3(0.45, 0.16, 0.02) * sunset * 0.6;
 
-    vec3 cityLights = nightColor * (1.0 - dayAmount) * 1.4;
+    vec3 cityLights = nightColor * (1.0 - dayAmount) * 1.6;
     vec3 color = mix(cityLights, litDay, dayAmount);
 
     // Blue atmospheric limb on the lit side only.
@@ -118,7 +118,7 @@ export const cloudsFragmentShader = /* glsl */ `
     // smoothstep away the faint speckle so only real cloud mass shows.
     float density = smoothstep(0.08, 0.55, tex.r * tex.a);
     float sunAlignment = dot(normalize(vWorldNormal), normalize(uSunDirection));
-    float light = max(sunAlignment, 0.0) * 0.9 + 0.06;
+    float light = max(sunAlignment, 0.0) * 0.88 + 0.06;
     gl_FragColor = vec4(vec3(light), density * 0.7);
   }
 `;
@@ -167,7 +167,7 @@ export const rippleFragmentShader = /* glsl */ `
               shockwave(vRadius, fract(phase + 0.5));
     a *= smoothstep(1.0, 0.72, vRadius); // vanish before the disc rim
     if (a <= 0.002) discard;
-    gl_FragColor = vec4(vColor * 1.35, a);
+    gl_FragColor = vec4(vColor * 1.9, a);
   }
 `;
 

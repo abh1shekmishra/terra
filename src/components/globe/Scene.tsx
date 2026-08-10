@@ -3,7 +3,6 @@
 import { Suspense, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
-import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import * as THREE from "three";
 import Earth from "./Earth";
 import Clouds from "./Clouds";
@@ -70,16 +69,6 @@ export default function Scene() {
         rotateSpeed={0.45}
         zoomSpeed={0.7}
       />
-
-      <EffectComposer>
-        <Bloom
-          mipmapBlur
-          luminanceThreshold={0.62}
-          luminanceSmoothing={0.2}
-          intensity={0.9}
-          radius={0.7}
-        />
-      </EffectComposer>
     </Canvas>
   );
 }
