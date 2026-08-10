@@ -5,16 +5,16 @@ export default function Home() {
     <main className="relative h-dvh w-full overflow-hidden bg-[#05070d]">
       <GlobeCanvas />
 
-      <header className="pointer-events-none absolute left-6 top-6 z-10 select-none">
-        <h1 className="text-2xl font-semibold tracking-tight text-white">
+      <header className="pointer-events-none absolute left-7 top-7 z-10 select-none">
+        <h1 className="text-[26px] font-semibold leading-none tracking-tight text-zinc-100">
           Terra
         </h1>
-        <p className="mt-1 text-sm text-white/50">
+        <p className="mt-2 text-sm font-medium text-zinc-400">
           Live planetary data, in your browser
         </p>
       </header>
 
-      <footer className="pointer-events-none absolute bottom-5 left-6 z-10 text-xs text-white/30">
+      <footer className="pointer-events-none absolute bottom-6 left-7 z-10 text-xs font-medium tracking-wide text-zinc-500">
         Drag to rotate · scroll to zoom
       </footer>
     </main>

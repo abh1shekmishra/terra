@@ -7,15 +7,15 @@ import dynamic from "next/dynamic";
  * server-side rendering disabled. Keeping this in its own client component
  * lets the page itself stay a normal server component.
  */
-const Globe = dynamic(() => import("./Globe"), {
+const Scene = dynamic(() => import("./globe/Scene"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-full w-full items-center justify-center text-sm text-white/40">
+    <div className="flex h-full w-full items-center justify-center text-sm text-zinc-500">
       Loading globe…
     </div>
   ),
 });
 
 export default function GlobeCanvas() {
-  return <Globe />;
+  return <Scene />;
 }
