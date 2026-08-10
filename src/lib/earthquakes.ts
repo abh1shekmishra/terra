@@ -62,9 +62,25 @@ export function magnitudeColor(mag: number): THREE.Color {
   return new THREE.Color().setHSL(hue, 0.9, 0.55);
 }
 
-/** Marker radius in world units, scaled by magnitude. */
-export function magnitudeSize(mag: number): number {
-  return 0.014 + Math.max(0.5, mag) * 0.006;
+export const EARTH_RADIUS_KM = 6371;
+
+/**
+ * Approximate "felt radius" (radius of perceptibility, ~MMI III) at the surface,
+ * in km. Perceptibility radius from the hypocentre scales as 10^(0.5·M), anchored
+ * to USGS's rule that an M3 is felt to ~20 km; we then project to the surface
+ * using the hypocentral depth (deep/small quakes are barely felt at the surface).
+ * This is an approximation in the spirit of the Allen, Wald & Worden (2012) IPE,
+ * not a precise ShakeMap.
+ */
+export function feltRadiusKm(mag: number, depthKm: number): number {
+  const hypocentral = 20 * Math.pow(10, 0.5 * (mag - 3));
+  const surface = Math.sqrt(Math.max(hypocentral * hypocentral - depthKm * depthKm, 0));
+  return Math.min(surface, 1500); // cap the very largest events
+}
+
+/** Felt radius expressed in globe world units, for the 3D shockwave dome. */
+export function feltRadiusWorld(mag: number, depthKm: number, globeRadius: number): number {
+  return (feltRadiusKm(mag, depthKm) / EARTH_RADIUS_KM) * globeRadius;
 }
 
 /** Compact "3m ago" / "5h ago" from an epoch timestamp. */

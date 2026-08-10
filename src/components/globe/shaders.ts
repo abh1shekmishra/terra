@@ -124,50 +124,50 @@ export const cloudsFragmentShader = /* glsl */ `
 `;
 
 // ---------------------------------------------------------------------------
-// Earthquake ripples — instanced discs laid tangent to the surface, each one
-// emitting expanding, fading shockwave rings (two, staggered) driven on the GPU
+// Earthquake shockwave domes — instanced hemispheres anchored at each epicentre,
+// expanding out to the event's real felt radius and fading, driven on the GPU.
+// A Fresnel term makes them read as translucent 3D shells.
 // ---------------------------------------------------------------------------
 
-export const rippleVertexShader = /* glsl */ `
+export const domeVertexShader = /* glsl */ `
   attribute vec3 aColor;
   attribute float aSeed;
   attribute float aSpeed;
 
-  varying float vRadius;
+  uniform float uTime;
+
   varying vec3 vColor;
-  varying float vSeed;
-  varying float vSpeed;
+  varying float vAlpha;
+  varying vec3 vWorldNormal;
+  varying vec3 vViewDir;
 
   void main() {
-    vRadius = length(position.xy);       // 0 at centre → 1 at disc rim
+    float t = fract(uTime * aSpeed + aSeed); // 0 -> 1 expansion progress
     vColor = aColor;
-    vSeed = aSeed;
-    vSpeed = aSpeed;
-    gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+    vAlpha = 1.0 - t;                        // fade as it grows
+
+    vec3 expanded = position * t;            // grow the hemisphere from a point
+    mat4 m = modelMatrix * instanceMatrix;
+    vec4 worldPosition = m * vec4(expanded, 1.0);
+
+    vWorldNormal = normalize(mat3(m) * normal);
+    vViewDir = normalize(cameraPosition - worldPosition.xyz);
+    gl_Position = projectionMatrix * viewMatrix * worldPosition;
   }
 `;
 
-export const rippleFragmentShader = /* glsl */ `
-  uniform float uTime;
-
-  varying float vRadius;
+export const domeFragmentShader = /* glsl */ `
   varying vec3 vColor;
-  varying float vSeed;
-  varying float vSpeed;
-
-  float shockwave(float r, float t) {
-    float edge = 0.07;
-    float ring = smoothstep(t - edge, t, r) * (1.0 - smoothstep(t, t + edge, r));
-    return ring * (1.0 - t); // dimmer as it expands outward
-  }
+  varying float vAlpha;
+  varying vec3 vWorldNormal;
+  varying vec3 vViewDir;
 
   void main() {
-    float phase = uTime * vSpeed + vSeed;
-    float a = shockwave(vRadius, fract(phase)) +
-              shockwave(vRadius, fract(phase + 0.5));
-    a *= smoothstep(1.0, 0.72, vRadius); // vanish before the disc rim
-    if (a <= 0.002) discard;
-    gl_FragColor = vec4(vColor * 1.9, a);
+    // Brighter where the shell is edge-on to the camera (a soft glassy rim).
+    float fresnel = pow(1.0 - abs(dot(normalize(vWorldNormal), normalize(vViewDir))), 2.0);
+    float a = vAlpha * (0.18 + 0.82 * fresnel);
+    if (a <= 0.004) discard;
+    gl_FragColor = vec4(vColor * 1.25, a * 0.55);
   }
 `;
 
