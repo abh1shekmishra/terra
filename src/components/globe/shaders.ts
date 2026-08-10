@@ -124,6 +124,54 @@ export const cloudsFragmentShader = /* glsl */ `
 `;
 
 // ---------------------------------------------------------------------------
+// Earthquake ripples — instanced discs laid tangent to the surface, each one
+// emitting expanding, fading shockwave rings (two, staggered) driven on the GPU
+// ---------------------------------------------------------------------------
+
+export const rippleVertexShader = /* glsl */ `
+  attribute vec3 aColor;
+  attribute float aSeed;
+  attribute float aSpeed;
+
+  varying float vRadius;
+  varying vec3 vColor;
+  varying float vSeed;
+  varying float vSpeed;
+
+  void main() {
+    vRadius = length(position.xy);       // 0 at centre → 1 at disc rim
+    vColor = aColor;
+    vSeed = aSeed;
+    vSpeed = aSpeed;
+    gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+  }
+`;
+
+export const rippleFragmentShader = /* glsl */ `
+  uniform float uTime;
+
+  varying float vRadius;
+  varying vec3 vColor;
+  varying float vSeed;
+  varying float vSpeed;
+
+  float shockwave(float r, float t) {
+    float edge = 0.07;
+    float ring = smoothstep(t - edge, t, r) * (1.0 - smoothstep(t, t + edge, r));
+    return ring * (1.0 - t); // dimmer as it expands outward
+  }
+
+  void main() {
+    float phase = uTime * vSpeed + vSeed;
+    float a = shockwave(vRadius, fract(phase)) +
+              shockwave(vRadius, fract(phase + 0.5));
+    a *= smoothstep(1.0, 0.72, vRadius); // vanish before the disc rim
+    if (a <= 0.002) discard;
+    gl_FragColor = vec4(vColor * 1.35, a);
+  }
+`;
+
+// ---------------------------------------------------------------------------
 // Atmosphere — a back-facing shell rendered additively for a scattering rim
 // ---------------------------------------------------------------------------
 

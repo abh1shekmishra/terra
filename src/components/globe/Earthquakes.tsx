@@ -6,72 +6,92 @@ import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import { latLngToVector3 } from "@/lib/geo";
 import { GLOBE_RADIUS } from "./constants";
+import { rippleFragmentShader, rippleVertexShader } from "./shaders";
 import {
   magnitudeColor,
-  magnitudeSize,
   timeAgo,
   useEarthquakes,
 } from "@/lib/earthquakes";
 
-const SURFACE = GLOBE_RADIUS + 0.012;
-const dummy = new THREE.Object3D();
+const CORE_SURFACE = GLOBE_RADIUS + 0.01;
+const RING_SURFACE = GLOBE_RADIUS + 0.006;
+const UP = new THREE.Vector3(0, 0, 1);
 
-/** Live earthquakes as instanced, magnitude-scaled glowing markers. */
+const dummy = new THREE.Object3D();
+const quat = new THREE.Quaternion();
+
+function coreSize(mag: number): number {
+  return THREE.MathUtils.clamp(0.006 + Math.max(0, mag) * 0.0016, 0.006, 0.018);
+}
+function ringRadius(mag: number): number {
+  return 0.045 + Math.max(0, mag) * 0.022;
+}
+
+/** Live earthquakes as bright epicenters emitting animated shockwave ripples. */
 export default function Earthquakes() {
   const { data } = useEarthquakes();
   const quakes = useMemo(() => data ?? [], [data]);
+  const count = quakes.length;
 
   const coreRef = useRef<THREE.InstancedMesh>(null);
-  const haloRef = useRef<THREE.InstancedMesh>(null);
-  const [hovered, setHovered] = useState<number | null>(null);
+  const ringRef = useRef<THREE.InstancedMesh>(null);
+  const rippleMat = useRef<THREE.ShaderMaterial>(null);
   const { gl } = useThree();
+  const [hovered, setHovered] = useState<number | null>(null);
 
-  const geo = useMemo(
-    () =>
-      quakes.map((q) => ({
-        position: latLngToVector3(q.lat, q.lng, SURFACE),
-        color: magnitudeColor(q.mag),
-        size: magnitudeSize(q.mag),
-      })),
-    [quakes],
-  );
+  // Per-quake geometry + instanced attribute buffers, rebuilt when data changes.
+  const { corePos, colors, aColor, aSeed, aSpeed } = useMemo(() => {
+    const corePos = quakes.map((q) => latLngToVector3(q.lat, q.lng, CORE_SURFACE));
+    const colors = quakes.map((q) => magnitudeColor(q.mag));
+    const aColor = new Float32Array(count * 3);
+    const aSeed = new Float32Array(count);
+    const aSpeed = new Float32Array(count);
+    quakes.forEach((q, i) => {
+      colors[i].toArray(aColor, i * 3);
+      aSeed[i] = Math.random();
+      aSpeed[i] = 0.28 + (Math.max(0, q.mag) / 7) * 0.22;
+    });
+    return { corePos, colors, aColor, aSeed, aSpeed };
+  }, [quakes, count]);
 
   useLayoutEffect(() => {
     const core = coreRef.current;
-    const halo = haloRef.current;
-    if (!core || !halo) return;
+    const ring = ringRef.current;
+    if (!core || !ring) return;
 
-    geo.forEach(({ position, color, size }, i) => {
-      dummy.position.copy(position);
-      dummy.scale.setScalar(size);
+    quakes.forEach((q, i) => {
+      const p = corePos[i];
+
+      dummy.position.copy(p);
+      dummy.quaternion.identity();
+      dummy.scale.setScalar(coreSize(q.mag));
       dummy.updateMatrix();
       core.setMatrixAt(i, dummy.matrix);
-      core.setColorAt(i, color);
+      core.setColorAt(i, colors[i]);
 
-      dummy.scale.setScalar(size * 2.6);
+      // Ripple disc laid flat against the surface (its +Z faces outward).
+      const normal = p.clone().normalize();
+      quat.setFromUnitVectors(UP, normal);
+      dummy.position.copy(normal.multiplyScalar(RING_SURFACE));
+      dummy.quaternion.copy(quat);
+      dummy.scale.setScalar(ringRadius(q.mag));
       dummy.updateMatrix();
-      halo.setMatrixAt(i, dummy.matrix);
-      halo.setColorAt(i, color);
+      ring.setMatrixAt(i, dummy.matrix);
     });
 
-    core.count = geo.length;
-    halo.count = geo.length;
+    core.count = count;
+    ring.count = count;
     core.instanceMatrix.needsUpdate = true;
-    halo.instanceMatrix.needsUpdate = true;
+    ring.instanceMatrix.needsUpdate = true;
     if (core.instanceColor) core.instanceColor.needsUpdate = true;
-    if (halo.instanceColor) halo.instanceColor.needsUpdate = true;
-  }, [geo]);
+  }, [quakes, corePos, colors, count]);
 
-  // Gentle collective pulse on the halos so the layer reads as "live".
   useFrame(({ clock }) => {
-    if (!haloRef.current) return;
-    const mat = haloRef.current.material as THREE.MeshBasicMaterial;
-    mat.opacity = 0.16 + 0.09 * Math.sin(clock.elapsedTime * 2);
+    if (rippleMat.current) rippleMat.current.uniforms.uTime.value = clock.elapsedTime;
   });
 
-  if (geo.length === 0) return null;
+  if (count === 0) return null;
 
-  const count = geo.length;
   const active = hovered !== null ? quakes[hovered] : null;
 
   const handleMove = (e: ThreeEvent<PointerEvent>) => {
@@ -89,17 +109,24 @@ export default function Earthquakes() {
   return (
     <group>
       <instancedMesh
-        key={`halo-${count}`}
-        ref={haloRef}
+        key={`ring-${count}`}
+        ref={ringRef}
         args={[undefined, undefined, count]}
+        frustumCulled={false}
       >
-        <sphereGeometry args={[1, 10, 10]} />
-        <meshBasicMaterial
+        <circleGeometry args={[1, 48]}>
+          <instancedBufferAttribute attach="attributes-aColor" args={[aColor, 3]} />
+          <instancedBufferAttribute attach="attributes-aSeed" args={[aSeed, 1]} />
+          <instancedBufferAttribute attach="attributes-aSpeed" args={[aSpeed, 1]} />
+        </circleGeometry>
+        <shaderMaterial
+          ref={rippleMat}
+          vertexShader={rippleVertexShader}
+          fragmentShader={rippleFragmentShader}
+          uniforms={{ uTime: { value: 0 } }}
           transparent
-          opacity={0.18}
-          blending={THREE.AdditiveBlending}
           depthWrite={false}
-          toneMapped={false}
+          blending={THREE.AdditiveBlending}
         />
       </instancedMesh>
 
@@ -116,12 +143,15 @@ export default function Earthquakes() {
 
       {active && hovered !== null && (
         <Html
-          position={geo[hovered].position}
+          position={corePos[hovered]}
           center
           style={{ pointerEvents: "none" }}
           zIndexRange={[100, 0]}
         >
-          <div className="w-max max-w-[220px] -translate-y-[calc(100%+14px)] rounded-lg border border-white/10 bg-zinc-950/85 px-3 py-2 text-left shadow-lg backdrop-blur-sm">
+          <div
+            className="w-max max-w-[220px] -translate-y-[calc(100%+14px)] rounded-lg border-l-2 bg-zinc-950/85 py-2 pl-2.5 pr-3 text-left shadow-xl backdrop-blur-sm"
+            style={{ borderLeftColor: `#${magnitudeColor(active.mag).getHexString()}` }}
+          >
             <div className="flex items-baseline gap-2">
               <span
                 className="text-sm font-semibold tabular-nums"
@@ -129,9 +159,7 @@ export default function Earthquakes() {
               >
                 M {active.mag.toFixed(1)}
               </span>
-              <span className="text-[11px] text-zinc-400">
-                {timeAgo(active.time)}
-              </span>
+              <span className="text-[11px] text-zinc-400">{timeAgo(active.time)}</span>
             </div>
             <div className="mt-0.5 text-xs leading-snug text-zinc-200">
               {active.place}
