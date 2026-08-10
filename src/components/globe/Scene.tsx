@@ -7,6 +7,7 @@ import * as THREE from "three";
 import Earth from "./Earth";
 import Clouds from "./Clouds";
 import Atmosphere from "./Atmosphere";
+import Earthquakes from "./Earthquakes";
 import { getSunDirection } from "@/lib/sun";
 
 const CAMERA_DISTANCE = 6.4;
@@ -57,6 +58,7 @@ export default function Scene() {
         <Clouds sunDirection={sunDirection} />
       </Suspense>
       <Atmosphere />
+      <Earthquakes />
 
       <OrbitControls
         enablePan={false}
