@@ -67,9 +67,12 @@ export default function Earthquakes() {
       core.setMatrixAt(i, dummy.matrix);
       core.setColorAt(i, colors[i]);
 
-      // Hemisphere anchored on the surface, scaled to the real felt radius.
+      // Hemisphere anchored on the surface. Size stays proportional to the real
+      // felt radius (tooltip shows the true km), but a floor + scale keeps every
+      // quake comfortably visible without zooming in.
       const normal = p.clone().normalize();
-      const radius = Math.max(feltRadiusWorld(q.mag, q.depth, GLOBE_RADIUS), 0.002);
+      const feltWorld = feltRadiusWorld(q.mag, q.depth, GLOBE_RADIUS);
+      const radius = THREE.MathUtils.clamp(0.04 + feltWorld * 1.8, 0.04, 0.34);
       quat.setFromUnitVectors(UP, normal);
       dummy.position.copy(normal.multiplyScalar(DOME_SURFACE));
       dummy.quaternion.copy(quat);

@@ -163,11 +163,12 @@ export const domeFragmentShader = /* glsl */ `
   varying vec3 vViewDir;
 
   void main() {
-    // Brighter where the shell is edge-on to the camera (a soft glassy rim).
+    // Brighter where the shell is edge-on to the camera (a soft glassy rim),
+    // with enough body across the dome to read clearly.
     float fresnel = pow(1.0 - abs(dot(normalize(vWorldNormal), normalize(vViewDir))), 2.0);
-    float a = vAlpha * (0.18 + 0.82 * fresnel);
+    float a = vAlpha * (0.32 + 0.68 * fresnel);
     if (a <= 0.004) discard;
-    gl_FragColor = vec4(vColor * 1.25, a * 0.55);
+    gl_FragColor = vec4(vColor * 1.3, a * 0.62);
   }
 `;
 
