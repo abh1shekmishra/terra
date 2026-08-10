@@ -1,5 +1,6 @@
 import GlobeCanvas from "@/components/GlobeCanvas";
 import EarthquakeHud from "@/components/EarthquakeHud";
+import LayerPanel from "@/components/LayerPanel";
 
 export default function Home() {
   return (
@@ -19,7 +20,11 @@ export default function Home() {
         <EarthquakeHud />
       </div>
 
-      <footer className="pointer-events-none absolute bottom-6 left-7 z-10 text-xs font-medium tracking-wide text-zinc-500">
+      <div className="absolute bottom-6 left-6 z-10">
+        <LayerPanel />
+      </div>
+
+      <footer className="pointer-events-none absolute bottom-7 left-1/2 z-10 -translate-x-1/2 text-xs font-medium tracking-wide text-zinc-500">
         Drag to rotate · scroll to zoom · hover a marker for details
       </footer>
     </main>

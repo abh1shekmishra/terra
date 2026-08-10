@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { magnitudeColor, useEarthquakes, type Earthquake } from "@/lib/earthquakes";
+import { useLayerStore } from "@/store/useLayerStore";
 
 const BUCKETS = [
   { label: "<2", test: (m: number) => m < 2, mag: 1.5 },
@@ -39,6 +40,7 @@ function Header({ live }: { live?: boolean }) {
 }
 
 export default function EarthquakeHud() {
+  const on = useLayerStore((s) => s.enabled.earthquakes);
   const { data, isPending, isError, dataUpdatedAt } = useEarthquakes();
 
   const scaleGradient = useMemo(
@@ -59,6 +61,8 @@ export default function EarthquakeHud() {
     );
     return { counts, max, strongest };
   }, [data]);
+
+  if (!on) return null;
 
   if (isError) {
     return (

@@ -9,6 +9,7 @@ import Clouds from "./Clouds";
 import Atmosphere from "./Atmosphere";
 import Earthquakes from "./Earthquakes";
 import { getSunDirection } from "@/lib/sun";
+import { useLayerStore } from "@/store/useLayerStore";
 
 const CAMERA_DISTANCE = 6.4;
 
@@ -21,6 +22,8 @@ function SunUpdater({ sunDirection }: { sunDirection: THREE.Vector3 }) {
 }
 
 export default function Scene() {
+  const layers = useLayerStore((s) => s.enabled);
+
   // Shared, mutated-in-place so Earth and Clouds read the same live sun vector.
   const sunDirection = useMemo(() => getSunDirection(new Date()), []);
 
@@ -58,7 +61,7 @@ export default function Scene() {
         <Clouds sunDirection={sunDirection} />
       </Suspense>
       <Atmosphere />
-      <Earthquakes />
+      {layers.earthquakes && <Earthquakes />}
 
       <OrbitControls
         enablePan={false}
