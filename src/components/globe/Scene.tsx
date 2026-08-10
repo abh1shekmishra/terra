@@ -9,6 +9,7 @@ import Clouds from "./Clouds";
 import Atmosphere from "./Atmosphere";
 import Earthquakes from "./Earthquakes";
 import Flights from "./Flights";
+import Events from "./Events";
 import { getSunDirection } from "@/lib/sun";
 import { useLayerStore } from "@/store/useLayerStore";
 
@@ -64,6 +65,7 @@ export default function Scene() {
       <Atmosphere />
       {layers.earthquakes && <Earthquakes />}
       {layers.flights && <Flights />}
+      {layers.events && <Events />}
 
       <OrbitControls
         enablePan={false}

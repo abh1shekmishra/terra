@@ -38,6 +38,6 @@ export const LAYERS: LayerMeta[] = [
     description: "Wildfires, storms, volcanoes",
     source: "NASA EONET",
     color: "#fb7185",
-    available: false,
+    available: true,
   },
 ];
