@@ -148,25 +148,31 @@ export default function Earthquakes() {
           style={{ pointerEvents: "none" }}
           zIndexRange={[100, 0]}
         >
-          <div
-            className="w-max max-w-[220px] -translate-y-[calc(100%+14px)] rounded-lg border-l-2 bg-zinc-950/85 py-2 pl-2.5 pr-3 text-left shadow-xl backdrop-blur-sm"
-            style={{ borderLeftColor: `#${magnitudeColor(active.mag).getHexString()}` }}
-          >
-            <div className="flex items-baseline gap-2">
-              <span
-                className="text-sm font-semibold tabular-nums"
-                style={{ color: `#${magnitudeColor(active.mag).getHexString()}` }}
-              >
-                M {active.mag.toFixed(1)}
-              </span>
-              <span className="text-[11px] text-zinc-400">{timeAgo(active.time)}</span>
+          <div className="relative -translate-y-[calc(100%+16px)]">
+            <div className="w-max max-w-[240px] rounded-xl border border-white/10 bg-zinc-950/80 shadow-2xl shadow-black/50 backdrop-blur-md">
+              <div className="flex items-center gap-2 px-3 pt-2.5">
+                <span
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: `#${magnitudeColor(active.mag).getHexString()}` }}
+                />
+                <span
+                  className="text-sm font-semibold tabular-nums"
+                  style={{ color: `#${magnitudeColor(active.mag).getHexString()}` }}
+                >
+                  M {active.mag.toFixed(1)}
+                </span>
+                <span className="ml-auto text-[11px] text-zinc-400">
+                  {timeAgo(active.time)}
+                </span>
+              </div>
+              <div className="px-3 pb-0.5 pt-1.5 text-xs leading-snug text-zinc-200">
+                {active.place}
+              </div>
+              <div className="px-3 pb-2.5 text-[11px] tabular-nums text-zinc-500">
+                Depth {active.depth.toFixed(0)} km
+              </div>
             </div>
-            <div className="mt-0.5 text-xs leading-snug text-zinc-200">
-              {active.place}
-            </div>
-            <div className="mt-1 text-[11px] tabular-nums text-zinc-500">
-              Depth {active.depth.toFixed(0)} km
-            </div>
+            <div className="absolute left-1/2 top-full h-2.5 w-2.5 -translate-x-1/2 -translate-y-1.5 rotate-45 border-b border-r border-white/10 bg-zinc-950/80" />
           </div>
         </Html>
       )}
