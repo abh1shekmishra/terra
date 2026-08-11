@@ -23,3 +23,24 @@ body {
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   overscroll-behavior: none;
 }
+
+@keyframes labelIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.place-label {
+  animation: labelIn 0.35s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .place-label {
+    animation: none;
+  }
+}

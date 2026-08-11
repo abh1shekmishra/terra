@@ -13,6 +13,7 @@ import PlateBoundaries from "./PlateBoundaries";
 import Flights from "./Flights";
 import Events from "./Events";
 import Satellites from "./Satellites";
+import PlaceLabels from "./PlaceLabels";
 import { getSunDirection } from "@/lib/sun";
 import { useLayerStore } from "@/store/useLayerStore";
 import { useSelectionStore } from "@/store/useSelectionStore";
@@ -80,6 +81,7 @@ export default function Scene() {
         <Clouds sunDirection={sunDirection} />
       </Suspense>
       <Atmosphere />
+      <PlaceLabels />
       {layers.earthquakes && showPlates && <PlateBoundaries />}
       {layers.earthquakes && <Earthquakes />}
       {layers.earthquakes && <EarthquakeSelection />}
