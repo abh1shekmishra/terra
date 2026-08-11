@@ -1,5 +1,5 @@
 import GlobeCanvas from "@/components/GlobeCanvas";
-import EarthquakeHud from "@/components/EarthquakeHud";
+import EarthActivity from "@/components/EarthActivity";
 import LayerPanel from "@/components/LayerPanel";
 import DetailPanel from "@/components/DetailPanel";
 
@@ -18,7 +18,7 @@ export default function Home() {
       </header>
 
       <div className="absolute right-6 top-6 z-10">
-        <EarthquakeHud />
+        <EarthActivity />
       </div>
 
       <div className="absolute bottom-6 left-6 z-10">
