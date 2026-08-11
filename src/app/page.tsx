@@ -30,7 +30,7 @@ export default function Home() {
         <DetailPanel />
       </div>
 
-      <div className="absolute bottom-3 left-1/2 z-10 flex w-full max-w-[calc(100vw-1rem)] -translate-x-1/2 justify-center px-2 sm:bottom-6">
+      <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 flex w-full max-w-[calc(100vw-1rem)] -translate-x-1/2 justify-center px-2 sm:bottom-6">
         <TimeScrubber />
       </div>
     </main>
