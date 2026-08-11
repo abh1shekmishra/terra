@@ -11,11 +11,11 @@ import Earthquakes from "./Earthquakes";
 import Flights from "./Flights";
 import Events from "./Events";
 import Satellites from "./Satellites";
-import CameraController from "./CameraController";
 import { getSunDirection } from "@/lib/sun";
 import { useLayerStore } from "@/store/useLayerStore";
 import { useSelectionStore } from "@/store/useSelectionStore";
 import { useTimeStore } from "@/store/useTimeStore";
+import { useViewStore } from "@/store/useViewStore";
 
 const CAMERA_DISTANCE = 6.4;
 
@@ -31,6 +31,13 @@ export default function Scene() {
   const layers = useLayerStore((s) => s.enabled);
   const live = useTimeStore((s) => s.live);
   const clearSelection = useSelectionStore((s) => s.clear);
+  const stopRide = useViewStore((s) => s.stopRide);
+  const riding = useViewStore((s) => s.rideSatId !== null);
+
+  const handleMissed = () => {
+    clearSelection();
+    stopRide();
+  };
 
   // Shared, mutated-in-place so Earth and Clouds read the same live sun vector.
   const sunDirection = useMemo(() => getSunDirection(new Date()), []);
@@ -51,7 +58,7 @@ export default function Scene() {
       camera={{ position: cameraPosition, fov: 42 }}
       dpr={[1, 2]}
       gl={{ antialias: true }}
-      onPointerMissed={clearSelection}
+      onPointerMissed={handleMissed}
     >
       <color attach="background" args={["#05070d"]} />
       <Stars
@@ -75,17 +82,18 @@ export default function Scene() {
       {layers.events && <Events />}
       {layers.satellites && live && <Satellites />}
 
-      <OrbitControls
-        makeDefault
-        enablePan={false}
-        enableDamping
-        dampingFactor={0.08}
-        minDistance={2.6}
-        maxDistance={14}
-        rotateSpeed={0.45}
-        zoomSpeed={0.7}
-      />
-      <CameraController />
+      {!riding && (
+        <OrbitControls
+          makeDefault
+          enablePan={false}
+          enableDamping
+          dampingFactor={0.08}
+          minDistance={2.6}
+          maxDistance={14}
+          rotateSpeed={0.45}
+          zoomSpeed={0.7}
+        />
+      )}
     </Canvas>
   );
 }

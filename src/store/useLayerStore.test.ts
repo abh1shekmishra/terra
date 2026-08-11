@@ -4,7 +4,12 @@ import { useLayerStore } from "@/store/useLayerStore";
 describe("useLayerStore", () => {
   beforeEach(() => {
     useLayerStore.setState({
-      enabled: { earthquakes: true, flights: false, events: false },
+      enabled: {
+        earthquakes: true,
+        flights: false,
+        events: false,
+        satellites: false,
+      },
     });
   });
 

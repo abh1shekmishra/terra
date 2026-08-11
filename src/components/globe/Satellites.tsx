@@ -13,6 +13,7 @@ import {
   type SatelliteTle,
 } from "@/lib/satellites";
 import { useSelectionStore } from "@/store/useSelectionStore";
+import { useViewStore } from "@/store/useViewStore";
 
 type SatRec = ReturnType<typeof satellite.twoline2satrec>;
 
@@ -20,6 +21,8 @@ type SatRec = ReturnType<typeof satellite.twoline2satrec>;
 const ALT_SCALE = 0.35;
 const UPDATE_INTERVAL = 0.08; // seconds between propagation passes
 const dummy = new THREE.Object3D();
+const rideDir = new THREE.Vector3();
+const rideDest = new THREE.Vector3();
 
 interface Rec {
   tle: SatelliteTle;
@@ -55,6 +58,8 @@ export default function Satellites() {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const { gl, camera } = useThree();
   const select = useSelectionStore((s) => s.select);
+  const rideSatId = useViewStore((s) => s.rideSatId);
+  const showOrbits = useViewStore((s) => s.showOrbits);
   const texture = useMemo(() => createSatelliteTexture(), []);
   const accum = useRef(0);
 
@@ -101,7 +106,7 @@ export default function Satellites() {
       for (let k = 0; k <= SAMPLES; k++) {
         const t = new Date(start + (k / SAMPLES) * spanMs);
         const pv = satellite.propagate(rec.satrec, t);
-        if (!pv.position || typeof pv.position === "boolean") {
+        if (!pv || !pv.position || typeof pv.position === "boolean") {
           prev = false;
           continue;
         }
@@ -138,16 +143,39 @@ export default function Satellites() {
   useFrame((_, delta) => {
     const mesh = meshRef.current;
     if (!mesh || count === 0) return;
+    const now = new Date();
+    const gmst = satellite.gstime(now);
+
+    // Ride mode: attach the camera to the chosen satellite every frame so its
+    // motion is felt (Earth sweeps beneath). OrbitControls is unmounted while
+    // riding, so nothing fights these writes.
+    if (rideSatId) {
+      const rec = recs.find((r) => String(r.satrec.satnum) === rideSatId);
+      if (rec) {
+        const pv = satellite.propagate(rec.satrec, now);
+        if (pv && pv.position && typeof pv.position !== "boolean") {
+          const geo = satellite.eciToGeodetic(pv.position, gmst);
+          const lat = satellite.degreesLat(geo.latitude);
+          const lng = satellite.degreesLong(geo.longitude);
+          rideDir.copy(latLngToVector3(lat, lng, 1));
+          rideDest.copy(rideDir).multiplyScalar(orbitRadius(geo.height) + 0.15);
+          camera.position.lerp(rideDest, 0.25);
+          camera.up.set(0, 1, 0);
+          camera.lookAt(0, 0, 0);
+        }
+      }
+    }
+
     accum.current += delta;
     if (accum.current < UPDATE_INTERVAL) return;
     accum.current = 0;
-
-    const now = new Date();
-    const gmst = satellite.gstime(now);
     for (let i = 0; i < count; i++) {
+      const ridden =
+        rideSatId !== null && String(recs[i].satrec.satnum) === rideSatId;
       const pv = satellite.propagate(recs[i].satrec, now);
-      const eci = pv.position;
-      if (!eci || typeof eci === "boolean") {
+      const eci = pv?.position;
+      if (ridden || !eci || typeof eci === "boolean") {
+        // Hide the ridden satellite's own icon so it doesn't block the view.
         dummy.scale.setScalar(0);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
@@ -173,7 +201,7 @@ export default function Satellites() {
     const rec = recs[e.instanceId];
     const now = new Date();
     const pv = satellite.propagate(rec.satrec, now);
-    if (!pv.position || typeof pv.position === "boolean") return;
+    if (!pv || !pv.position || typeof pv.position === "boolean") return;
     const gmst = satellite.gstime(now);
     const geo = satellite.eciToGeodetic(pv.position, gmst);
     const velocity =
@@ -202,7 +230,7 @@ export default function Satellites() {
 
   return (
     <group>
-      {trails && (
+      {trails && showOrbits && (
         <lineSegments geometry={trails} frustumCulled={false}>
           <lineBasicMaterial
             vertexColors

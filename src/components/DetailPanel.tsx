@@ -7,14 +7,6 @@ import { feltRadiusKm, magnitudeColor } from "@/lib/earthquakes";
 import { categoryColor } from "@/lib/events";
 import { satelliteColor } from "@/lib/satellites";
 
-/** A vantage just outside the satellite, framed so Earth fills the view. */
-function flyVantage(pos: [number, number, number]): [number, number, number] {
-  const [x, y, z] = pos;
-  const len = Math.hypot(x, y, z) || 1;
-  const r = Math.max(len, 2.9);
-  return [(x / len) * r, (y / len) * r, (z / len) * r];
-}
-
 const ALERT_COLORS: Record<string, string> = {
   green: "#22c55e",
   yellow: "#eab308",
@@ -210,7 +202,9 @@ function SatelliteDetails({
   data: Extract<Selection, { kind: "satellite" }>["data"];
   onClose: () => void;
 }) {
-  const setFlyTarget = useViewStore((s) => s.setFlyTarget);
+  const setRide = useViewStore((s) => s.setRide);
+  const stopRide = useViewStore((s) => s.stopRide);
+  const riding = useViewStore((s) => s.rideSatId) === data.id;
   return (
     <>
       <div className="flex items-center gap-2">
@@ -240,10 +234,15 @@ function SatelliteDetails({
 
       <button
         type="button"
-        onClick={() => setFlyTarget(flyVantage(data.pos))}
-        className="mt-3 inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-medium text-zinc-200 transition-colors duration-150 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+        onClick={() => (riding ? stopRide() : setRide(data.id))}
+        className={`mt-3 inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25 ${
+          riding
+            ? "border-sky-400/40 bg-sky-500/15 text-sky-200 hover:bg-sky-500/25"
+            : "border-white/10 text-zinc-200 hover:bg-white/5"
+        }`}
       >
-        View from satellite <span aria-hidden>↗</span>
+        {riding ? "Exit satellite view" : "View from satellite"}
+        <span aria-hidden>{riding ? "✕" : "↗"}</span>
       </button>
     </>
   );

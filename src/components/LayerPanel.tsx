@@ -2,10 +2,13 @@
 
 import { LAYERS } from "@/lib/layers";
 import { useLayerStore } from "@/store/useLayerStore";
+import { useViewStore } from "@/store/useViewStore";
 
 export default function LayerPanel() {
   const enabled = useLayerStore((s) => s.enabled);
   const toggle = useLayerStore((s) => s.toggle);
+  const showOrbits = useViewStore((s) => s.showOrbits);
+  const toggleOrbits = useViewStore((s) => s.toggleOrbits);
 
   return (
     <nav
@@ -59,6 +62,18 @@ export default function LayerPanel() {
                   </span>
                 )}
               </button>
+
+              {layer.id === "satellites" && on && (
+                <label className="ml-[26px] mt-0.5 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-[11px] text-zinc-400 transition-colors hover:text-zinc-200">
+                  <input
+                    type="checkbox"
+                    checked={showOrbits}
+                    onChange={toggleOrbits}
+                    className="h-3 w-3 accent-sky-400"
+                  />
+                  Show orbits
+                </label>
+              )}
             </li>
           );
         })}
