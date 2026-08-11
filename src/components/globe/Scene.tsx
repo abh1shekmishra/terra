@@ -10,6 +10,7 @@ import Atmosphere from "./Atmosphere";
 import Earthquakes from "./Earthquakes";
 import Flights from "./Flights";
 import Events from "./Events";
+import Satellites from "./Satellites";
 import { getSunDirection } from "@/lib/sun";
 import { useLayerStore } from "@/store/useLayerStore";
 import { useSelectionStore } from "@/store/useSelectionStore";
@@ -71,13 +72,14 @@ export default function Scene() {
       {layers.earthquakes && <Earthquakes />}
       {layers.flights && live && <Flights />}
       {layers.events && <Events />}
+      {layers.satellites && live && <Satellites />}
 
       <OrbitControls
         enablePan={false}
         enableDamping
         dampingFactor={0.08}
         minDistance={2.6}
-        maxDistance={11}
+        maxDistance={14}
         rotateSpeed={0.45}
         zoomSpeed={0.7}
       />

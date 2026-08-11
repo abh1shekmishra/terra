@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useSelectionStore, type Selection } from "@/store/useSelectionStore";
 import { feltRadiusKm, magnitudeColor } from "@/lib/earthquakes";
 import { categoryColor } from "@/lib/events";
+import { satelliteColor } from "@/lib/satellites";
 
 const ALERT_COLORS: Record<string, string> = {
   green: "#22c55e",
@@ -193,6 +194,43 @@ function EventDetails({
   );
 }
 
+function SatelliteDetails({
+  data,
+  onClose,
+}: {
+  data: Extract<Selection, { kind: "satellite" }>["data"];
+  onClose: () => void;
+}) {
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <span
+          className="h-2.5 w-2.5 rounded-full"
+          style={{ backgroundColor: satelliteColor(data.group) }}
+        />
+        <span className="text-sm font-semibold tracking-wide text-zinc-100">
+          {data.name}
+        </span>
+        <CloseButton onClose={onClose} />
+      </div>
+      <div className="mt-1 text-[11px] uppercase tracking-wide text-zinc-500">
+        {data.group} · NORAD {data.id}
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-x-3 gap-y-3">
+        <Stat label="Altitude" value={`${Math.round(data.altKm).toLocaleString()} km`} />
+        <Stat label="Speed" value={`${data.velKms.toFixed(2)} km/s`} />
+        <Stat label="Inclination" value={`${data.incDeg.toFixed(1)}°`} />
+        <Stat label="Period" value={`${Math.round(data.periodMin)} min`} />
+        <Stat
+          label="Over"
+          value={`${data.lat.toFixed(1)}°, ${data.lng.toFixed(1)}°`}
+        />
+      </div>
+    </>
+  );
+}
+
 export default function DetailPanel() {
   const selected = useSelectionStore((s) => s.selected);
   const clear = useSelectionStore((s) => s.clear);
@@ -216,6 +254,9 @@ export default function DetailPanel() {
           )}
           {selected.kind === "event" && (
             <EventDetails data={selected.data} onClose={clear} />
+          )}
+          {selected.kind === "satellite" && (
+            <SatelliteDetails data={selected.data} onClose={clear} />
           )}
         </motion.div>
       )}

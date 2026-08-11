@@ -4,7 +4,7 @@
  * this list, so adding a new layer is a matter of adding an entry (plus its
  * renderer) rather than touching the plumbing.
  */
-export type LayerId = "earthquakes" | "flights" | "events";
+export type LayerId = "earthquakes" | "flights" | "events" | "satellites";
 
 export interface LayerMeta {
   id: LayerId;
@@ -38,6 +38,14 @@ export const LAYERS: LayerMeta[] = [
     description: "Wildfires, storms, volcanoes",
     source: "NASA EONET",
     color: "#fb7185",
+    available: true,
+  },
+  {
+    id: "satellites",
+    label: "Satellites",
+    description: "Orbiting spacecraft",
+    source: "CelesTrak",
+    color: "#a78bfa",
     available: true,
   },
 ];

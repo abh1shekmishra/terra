@@ -7,18 +7,21 @@ import { STEPS, cursorTime, useTimeStore } from "@/store/useTimeStore";
 import { magnitudeColor, useEarthquakes } from "@/lib/earthquakes";
 import { useFlights } from "@/lib/flights";
 import { useEvents } from "@/lib/events";
+import { useSatellites } from "@/lib/satellites";
 
 // Soft reference maxima used only to normalise the aggregate activity meter.
 const CAPS: Record<LayerId, number> = {
   earthquakes: 300,
   flights: 1500,
   events: 1500,
+  satellites: 1000,
 };
 
 const NOUN: Record<LayerId, string> = {
   earthquakes: "earthquakes",
   flights: "aircraft",
   events: "events",
+  satellites: "satellites",
 };
 
 function utcTime(ms: number): string {
@@ -33,12 +36,14 @@ export default function EarthActivity() {
   const eq = useEarthquakes();
   const fl = useFlights(enabled.flights);
   const ev = useEvents(enabled.events);
+  const sat = useSatellites(enabled.satellites);
   const [showWhy, setShowWhy] = useState(false);
 
   const counts: Record<LayerId, number | null> = {
     earthquakes: eq.data ? eq.data.length : null,
     flights: fl.data ? fl.data.flights.length : null,
     events: ev.data ? ev.data.events.length : null,
+    satellites: sat.data ? sat.data.satellites.length : null,
   };
 
   const updatedAt = Math.max(
