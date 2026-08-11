@@ -21,6 +21,9 @@ const eslintConfig = defineConfig([
     files: ["src/components/globe/**/*.tsx"],
     rules: {
       "react-hooks/immutability": "off",
+      // Deriving geometry from time-dependent orbital data happens in an effect
+      // (it can't run in render — that would be an impure Date.now() call).
+      "react-hooks/set-state-in-effect": "off",
     },
   },
 ]);

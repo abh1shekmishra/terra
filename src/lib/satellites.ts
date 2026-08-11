@@ -24,6 +24,7 @@ export interface SatelliteDetail {
   periodMin: number;
   lat: number;
   lng: number;
+  pos: [number, number, number]; // world position at click (for fly-to)
 }
 
 const GROUP_COLORS: Record<string, string> = {

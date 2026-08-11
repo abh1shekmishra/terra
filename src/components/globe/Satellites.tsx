@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import * as THREE from "three";
 import * as satellite from "satellite.js";
@@ -80,6 +80,53 @@ export default function Satellites() {
 
   const count = recs.length;
 
+  // Faint orbit trails: each satellite's ground track over one period, built
+  // once into a single line-segment buffer (one draw call) coloured by group.
+  const [trails, setTrails] = useState<THREE.BufferGeometry | null>(null);
+  useEffect(() => {
+    if (recs.length === 0) {
+      setTrails(null);
+      return;
+    }
+    const SAMPLES = 48;
+    const positions: number[] = [];
+    const colors: number[] = [];
+    const start = Date.now();
+    const a = new THREE.Vector3();
+    const b = new THREE.Vector3();
+    for (const rec of recs) {
+      const periodMin = rec.satrec.no ? (2 * Math.PI) / rec.satrec.no : 95;
+      const spanMs = Math.min(periodMin, 24 * 60) * 60_000;
+      let prev = false;
+      for (let k = 0; k <= SAMPLES; k++) {
+        const t = new Date(start + (k / SAMPLES) * spanMs);
+        const pv = satellite.propagate(rec.satrec, t);
+        if (!pv.position || typeof pv.position === "boolean") {
+          prev = false;
+          continue;
+        }
+        const geo = satellite.eciToGeodetic(pv.position, satellite.gstime(t));
+        const lat = satellite.degreesLat(geo.latitude);
+        const lng = satellite.degreesLong(geo.longitude);
+        b.copy(latLngToVector3(lat, lng, orbitRadius(geo.height)));
+        if (prev && a.distanceTo(b) < 2.5) {
+          positions.push(a.x, a.y, a.z, b.x, b.y, b.z);
+          colors.push(
+            rec.color.r, rec.color.g, rec.color.b,
+            rec.color.r, rec.color.g, rec.color.b,
+          );
+        }
+        a.copy(b);
+        prev = true;
+      }
+    }
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    setTrails(geom);
+    return () => geom.dispose();
+  }, [recs]);
+
   useLayoutEffect(() => {
     const mesh = meshRef.current;
     if (!mesh) return;
@@ -110,7 +157,7 @@ export default function Satellites() {
       const lat = satellite.degreesLat(geo.latitude);
       const lng = satellite.degreesLong(geo.longitude);
       dummy.position.copy(latLngToVector3(lat, lng, orbitRadius(geo.height)));
-      dummy.scale.setScalar(0.038);
+      dummy.scale.setScalar(0.05);
       dummy.lookAt(camera.position); // billboard the icon toward the camera
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
@@ -133,6 +180,9 @@ export default function Satellites() {
       pv.velocity && typeof pv.velocity !== "boolean"
         ? Math.hypot(pv.velocity.x, pv.velocity.y, pv.velocity.z)
         : 0;
+    const lat = satellite.degreesLat(geo.latitude);
+    const lng = satellite.degreesLong(geo.longitude);
+    const pos = latLngToVector3(lat, lng, orbitRadius(geo.height));
     select({
       kind: "satellite",
       data: {
@@ -143,31 +193,46 @@ export default function Satellites() {
         velKms: velocity,
         incDeg: satellite.radiansToDegrees(rec.satrec.inclo),
         periodMin: rec.satrec.no ? (2 * Math.PI) / rec.satrec.no : 0,
-        lat: satellite.degreesLat(geo.latitude),
-        lng: satellite.degreesLong(geo.longitude),
+        lat,
+        lng,
+        pos: [pos.x, pos.y, pos.z],
       },
     });
   };
 
   return (
-    <instancedMesh
-      key={`sats-${count}`}
-      ref={meshRef}
-      args={[undefined, undefined, count]}
-      onClick={handleClick}
-      onPointerOver={() => (gl.domElement.style.cursor = "pointer")}
-      onPointerOut={() => (gl.domElement.style.cursor = "auto")}
-      frustumCulled={false}
-    >
-      <planeGeometry args={[1, 1]} />
-      <meshBasicMaterial
-        map={texture}
-        transparent
-        alphaTest={0.3}
-        side={THREE.DoubleSide}
-        depthWrite={false}
-        toneMapped={false}
-      />
-    </instancedMesh>
+    <group>
+      {trails && (
+        <lineSegments geometry={trails} frustumCulled={false}>
+          <lineBasicMaterial
+            vertexColors
+            transparent
+            opacity={0.28}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </lineSegments>
+      )}
+
+      <instancedMesh
+        key={`sats-${count}`}
+        ref={meshRef}
+        args={[undefined, undefined, count]}
+        onClick={handleClick}
+        onPointerOver={() => (gl.domElement.style.cursor = "pointer")}
+        onPointerOut={() => (gl.domElement.style.cursor = "auto")}
+        frustumCulled={false}
+      >
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial
+          map={texture}
+          transparent
+          alphaTest={0.3}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </instancedMesh>
+    </group>
   );
 }

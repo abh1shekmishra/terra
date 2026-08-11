@@ -2,9 +2,18 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useSelectionStore, type Selection } from "@/store/useSelectionStore";
+import { useViewStore } from "@/store/useViewStore";
 import { feltRadiusKm, magnitudeColor } from "@/lib/earthquakes";
 import { categoryColor } from "@/lib/events";
 import { satelliteColor } from "@/lib/satellites";
+
+/** A vantage just outside the satellite, framed so Earth fills the view. */
+function flyVantage(pos: [number, number, number]): [number, number, number] {
+  const [x, y, z] = pos;
+  const len = Math.hypot(x, y, z) || 1;
+  const r = Math.max(len, 2.9);
+  return [(x / len) * r, (y / len) * r, (z / len) * r];
+}
 
 const ALERT_COLORS: Record<string, string> = {
   green: "#22c55e",
@@ -201,6 +210,7 @@ function SatelliteDetails({
   data: Extract<Selection, { kind: "satellite" }>["data"];
   onClose: () => void;
 }) {
+  const setFlyTarget = useViewStore((s) => s.setFlyTarget);
   return (
     <>
       <div className="flex items-center gap-2">
@@ -227,6 +237,14 @@ function SatelliteDetails({
           value={`${data.lat.toFixed(1)}°, ${data.lng.toFixed(1)}°`}
         />
       </div>
+
+      <button
+        type="button"
+        onClick={() => setFlyTarget(flyVantage(data.pos))}
+        className="mt-3 inline-flex items-center gap-1 rounded-lg border border-white/10 px-2.5 py-1.5 text-xs font-medium text-zinc-200 transition-colors duration-150 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+      >
+        View from satellite <span aria-hidden>↗</span>
+      </button>
     </>
   );
 }
