@@ -40,7 +40,7 @@ export default function Events() {
     const halo = haloRef.current;
     if (!core || !halo) return;
 
-    events.forEach((_, i) => {
+    positions.forEach((_, i) => {
       dummy.position.copy(positions[i]);
       dummy.scale.setScalar(0.011);
       dummy.updateMatrix();

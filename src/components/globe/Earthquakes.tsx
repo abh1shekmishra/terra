@@ -46,7 +46,9 @@ export default function Earthquakes() {
     const aSpeed = new Float32Array(count);
     quakes.forEach((q, i) => {
       colors[i].toArray(aColor, i * 3);
-      aSeed[i] = Math.random();
+      // Deterministic per-index phase offset (stable across renders, no impurity).
+      const hash = Math.sin((i + 1) * 127.1) * 43758.5453;
+      aSeed[i] = hash - Math.floor(hash);
       aSpeed[i] = 0.22 + (Math.max(0, q.mag) / 7) * 0.16;
     });
     return { corePos, colors, aColor, aSeed, aSpeed };
