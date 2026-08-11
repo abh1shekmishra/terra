@@ -31,12 +31,31 @@ function orbitRadius(altKm: number): number {
   return GLOBE_RADIUS + (altKm / EARTH_RADIUS_KM) * GLOBE_RADIUS * ALT_SCALE;
 }
 
+/** A tiny satellite silhouette (central body + two solar-panel wings). */
+function createSatelliteTexture(): THREE.CanvasTexture {
+  const size = 64;
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(4, 27, 18, 10); // left solar panel
+  ctx.fillRect(42, 27, 18, 10); // right solar panel
+  ctx.fillRect(22, 31, 6, 2); // left strut
+  ctx.fillRect(36, 31, 6, 2); // right strut
+  ctx.fillRect(27, 21, 10, 22); // body
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.anisotropy = 4;
+  return texture;
+}
+
 /** Real satellites, propagated from TLEs with SGP4 each tick. */
 export default function Satellites() {
   const { data } = useSatellites(true);
   const meshRef = useRef<THREE.InstancedMesh>(null);
-  const { gl } = useThree();
+  const { gl, camera } = useThree();
   const select = useSelectionStore((s) => s.select);
+  const texture = useMemo(() => createSatelliteTexture(), []);
   const accum = useRef(0);
 
   const recs = useMemo<Rec[]>(() => {
@@ -91,7 +110,8 @@ export default function Satellites() {
       const lat = satellite.degreesLat(geo.latitude);
       const lng = satellite.degreesLong(geo.longitude);
       dummy.position.copy(latLngToVector3(lat, lng, orbitRadius(geo.height)));
-      dummy.scale.setScalar(0.012);
+      dummy.scale.setScalar(0.038);
+      dummy.lookAt(camera.position); // billboard the icon toward the camera
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
     }
@@ -139,8 +159,15 @@ export default function Satellites() {
       onPointerOut={() => (gl.domElement.style.cursor = "auto")}
       frustumCulled={false}
     >
-      <sphereGeometry args={[1, 6, 6]} />
-      <meshBasicMaterial toneMapped={false} />
+      <planeGeometry args={[1, 1]} />
+      <meshBasicMaterial
+        map={texture}
+        transparent
+        alphaTest={0.3}
+        side={THREE.DoubleSide}
+        depthWrite={false}
+        toneMapped={false}
+      />
     </instancedMesh>
   );
 }
