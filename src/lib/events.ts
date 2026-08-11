@@ -8,6 +8,8 @@ export interface NaturalEvent {
   lat: number;
   lng: number;
   date: string;
+  link: string | null; // source / details URL
+  points: number; // number of track points (storms move over many)
 }
 
 export interface EventsResponse {

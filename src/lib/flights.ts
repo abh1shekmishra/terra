@@ -10,6 +10,8 @@ export interface Flight {
   hdg: number; // heading, degrees from north
   alt: number; // metres
   vel: number; // m/s
+  vr: number; // vertical rate, m/s (+climb / -descent)
+  sq: string; // transponder squawk code
 }
 
 export interface FlightsResponse {

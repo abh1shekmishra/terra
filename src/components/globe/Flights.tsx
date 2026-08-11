@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { latLngToVector3 } from "@/lib/geo";
 import { GLOBE_RADIUS } from "./constants";
 import { altitudeColor, EARTH_RADIUS_M, useFlights } from "@/lib/flights";
+import { useSelectionStore } from "@/store/useSelectionStore";
 
 const BASE_ALT = GLOBE_RADIUS + 0.02;
 const PLANE_SIZE = 0.032;
@@ -62,6 +63,7 @@ export default function Flights() {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const texture = useMemo(() => createPlaneTexture(), []);
   const { gl } = useThree();
+  const select = useSelectionStore((s) => s.select);
   const [hovered, setHovered] = useState<number | null>(null);
 
   // Mutable per-aircraft state, advanced each frame by dead-reckoning.
@@ -162,6 +164,12 @@ export default function Flights() {
     setHovered(null);
     gl.domElement.style.cursor = "auto";
   };
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    if (e.instanceId !== undefined) {
+      select({ kind: "flight", data: flights[e.instanceId] });
+    }
+  };
 
   return (
     <group>
@@ -171,6 +179,7 @@ export default function Flights() {
         args={[undefined, undefined, count]}
         onPointerMove={handleMove}
         onPointerOut={handleOut}
+        onClick={handleClick}
         frustumCulled={false}
       >
         <planeGeometry args={[1, 1]} />

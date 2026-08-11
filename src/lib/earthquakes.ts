@@ -11,6 +11,13 @@ export interface Earthquake {
   lat: number;
   lng: number;
   url: string;
+  magType: string; // e.g. "mww", "ml"
+  status: string; // "reviewed" | "automatic"
+  tsunami: boolean; // tsunami warning flagged
+  alert: string | null; // PAGER alert: green/yellow/orange/red
+  mmi: number | null; // instrumental intensity (Modified Mercalli)
+  felt: number | null; // number of "did you feel it?" reports
+  sig: number; // event significance score
 }
 
 /** Past 24 hours, all magnitudes. Updated by USGS about once a minute. */
@@ -19,7 +26,19 @@ const USGS_FEED =
 
 interface UsgsFeature {
   id: string;
-  properties: { mag: number | null; place: string | null; time: number; url: string };
+  properties: {
+    mag: number | null;
+    place: string | null;
+    time: number;
+    url: string;
+    magType: string | null;
+    status: string | null;
+    tsunami: number | null;
+    alert: string | null;
+    mmi: number | null;
+    felt: number | null;
+    sig: number | null;
+  };
   geometry: { coordinates: [number, number, number] } | null;
 }
 interface UsgsResponse {
@@ -42,6 +61,13 @@ export async function fetchEarthquakes(): Promise<Earthquake[]> {
       lng: f.geometry!.coordinates[0],
       lat: f.geometry!.coordinates[1],
       url: f.properties.url,
+      magType: f.properties.magType ?? "",
+      status: f.properties.status ?? "",
+      tsunami: f.properties.tsunami === 1,
+      alert: f.properties.alert ?? null,
+      mmi: f.properties.mmi ?? null,
+      felt: f.properties.felt ?? null,
+      sig: f.properties.sig ?? 0,
     }))
     .sort((a, b) => a.mag - b.mag); // draw larger quakes last, on top
 }

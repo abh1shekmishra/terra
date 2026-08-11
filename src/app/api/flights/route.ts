@@ -45,6 +45,8 @@ export async function GET() {
         hdg: heading,
         alt,
         vel: typeof s[9] === "number" ? s[9] : 0,
+        vr: typeof s[11] === "number" ? s[11] : 0, // vertical rate (m/s)
+        sq: typeof s[14] === "string" ? s[14] : "", // transponder squawk
       });
     }
 

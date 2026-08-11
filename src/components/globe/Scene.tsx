@@ -12,6 +12,7 @@ import Flights from "./Flights";
 import Events from "./Events";
 import { getSunDirection } from "@/lib/sun";
 import { useLayerStore } from "@/store/useLayerStore";
+import { useSelectionStore } from "@/store/useSelectionStore";
 
 const CAMERA_DISTANCE = 6.4;
 
@@ -25,6 +26,7 @@ function SunUpdater({ sunDirection }: { sunDirection: THREE.Vector3 }) {
 
 export default function Scene() {
   const layers = useLayerStore((s) => s.enabled);
+  const clearSelection = useSelectionStore((s) => s.clear);
 
   // Shared, mutated-in-place so Earth and Clouds read the same live sun vector.
   const sunDirection = useMemo(() => getSunDirection(new Date()), []);
@@ -45,6 +47,7 @@ export default function Scene() {
       camera={{ position: cameraPosition, fov: 42 }}
       dpr={[1, 2]}
       gl={{ antialias: true }}
+      onPointerMissed={clearSelection}
     >
       <color attach="background" args={["#05070d"]} />
       <Stars

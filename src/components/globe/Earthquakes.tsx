@@ -14,6 +14,7 @@ import {
   timeAgo,
   useEarthquakes,
 } from "@/lib/earthquakes";
+import { useSelectionStore } from "@/store/useSelectionStore";
 
 const CORE_SURFACE = GLOBE_RADIUS + 0.008;
 const DOME_SURFACE = GLOBE_RADIUS + 0.002;
@@ -36,6 +37,7 @@ export default function Earthquakes() {
   const domeRef = useRef<THREE.InstancedMesh>(null);
   const domeMat = useRef<THREE.ShaderMaterial>(null);
   const { gl } = useThree();
+  const select = useSelectionStore((s) => s.select);
   const [hovered, setHovered] = useState<number | null>(null);
 
   const { corePos, colors, aColor, aSeed, aSpeed } = useMemo(() => {
@@ -110,6 +112,12 @@ export default function Earthquakes() {
     setHovered(null);
     gl.domElement.style.cursor = "auto";
   };
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    if (e.instanceId !== undefined) {
+      select({ kind: "earthquake", data: quakes[e.instanceId] });
+    }
+  };
 
   return (
     <group>
@@ -141,6 +149,7 @@ export default function Earthquakes() {
         args={[undefined, undefined, count]}
         onPointerMove={handleMove}
         onPointerOut={handleOut}
+        onClick={handleClick}
       >
         <sphereGeometry args={[1, 12, 12]} />
         <meshBasicMaterial toneMapped={false} />

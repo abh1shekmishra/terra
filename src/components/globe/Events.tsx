@@ -7,6 +7,7 @@ import * as THREE from "three";
 import { latLngToVector3 } from "@/lib/geo";
 import { GLOBE_RADIUS } from "./constants";
 import { categoryColor, useEvents } from "@/lib/events";
+import { useSelectionStore } from "@/store/useSelectionStore";
 
 const SURFACE = GLOBE_RADIUS + 0.014;
 const dummy = new THREE.Object3D();
@@ -27,6 +28,7 @@ export default function Events() {
   const coreRef = useRef<THREE.InstancedMesh>(null);
   const haloRef = useRef<THREE.InstancedMesh>(null);
   const { gl } = useThree();
+  const select = useSelectionStore((s) => s.select);
   const [hovered, setHovered] = useState<number | null>(null);
 
   const { positions, colors } = useMemo(() => {
@@ -82,6 +84,12 @@ export default function Events() {
     setHovered(null);
     gl.domElement.style.cursor = "auto";
   };
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation();
+    if (e.instanceId !== undefined) {
+      select({ kind: "event", data: events[e.instanceId] });
+    }
+  };
 
   return (
     <group>
@@ -106,6 +114,7 @@ export default function Events() {
         args={[undefined, undefined, count]}
         onPointerMove={handleMove}
         onPointerOut={handleOut}
+        onClick={handleClick}
       >
         <sphereGeometry args={[1, 12, 12]} />
         <meshBasicMaterial toneMapped={false} />

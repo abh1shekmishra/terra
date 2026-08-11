@@ -15,7 +15,9 @@ interface EonetGeometry {
 interface EonetEvent {
   id: string;
   title: string;
+  link?: string;
   categories: { id: string; title: string }[];
+  sources?: { id: string; url: string }[];
   geometry: EonetGeometry[];
 }
 interface EonetResponse {
@@ -71,6 +73,8 @@ export async function GET() {
         lat,
         lng,
         date: geom.date,
+        link: ev.link ?? (ev.sources && ev.sources[0]?.url) ?? null,
+        points: ev.geometry.length, // how many track points (storms have many)
       });
     }
 
