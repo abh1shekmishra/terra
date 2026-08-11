@@ -8,6 +8,8 @@ import Earth from "./Earth";
 import Clouds from "./Clouds";
 import Atmosphere from "./Atmosphere";
 import Earthquakes from "./Earthquakes";
+import EarthquakeSelection from "./EarthquakeSelection";
+import PlateBoundaries from "./PlateBoundaries";
 import Flights from "./Flights";
 import Events from "./Events";
 import Satellites from "./Satellites";
@@ -33,6 +35,7 @@ export default function Scene() {
   const clearSelection = useSelectionStore((s) => s.clear);
   const stopRide = useViewStore((s) => s.stopRide);
   const riding = useViewStore((s) => s.rideSatId !== null);
+  const showPlates = useViewStore((s) => s.showPlates);
 
   const handleMissed = () => {
     clearSelection();
@@ -77,7 +80,9 @@ export default function Scene() {
         <Clouds sunDirection={sunDirection} />
       </Suspense>
       <Atmosphere />
+      {layers.earthquakes && showPlates && <PlateBoundaries />}
       {layers.earthquakes && <Earthquakes />}
+      {layers.earthquakes && <EarthquakeSelection />}
       {layers.flights && live && <Flights />}
       {layers.events && <Events />}
       {layers.satellites && live && <Satellites />}

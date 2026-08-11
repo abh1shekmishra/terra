@@ -4,6 +4,9 @@ import LayerPanel from "@/components/LayerPanel";
 import DetailPanel from "@/components/DetailPanel";
 import TimeScrubber from "@/components/TimeScrubber";
 
+// Temporarily hidden while we finish other areas (kept, not removed).
+const SHOW_TIME_MACHINE = false;
+
 export default function Home() {
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-[#05070d]">
@@ -30,9 +33,11 @@ export default function Home() {
         <DetailPanel />
       </div>
 
-      <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 flex w-full max-w-[calc(100vw-1rem)] -translate-x-1/2 justify-center px-2 sm:bottom-6">
-        <TimeScrubber />
-      </div>
+      {SHOW_TIME_MACHINE && (
+        <div className="pointer-events-none absolute bottom-3 left-1/2 z-10 flex w-full max-w-[calc(100vw-1rem)] -translate-x-1/2 justify-center px-2 sm:bottom-6">
+          <TimeScrubber />
+        </div>
+      )}
     </main>
   );
 }

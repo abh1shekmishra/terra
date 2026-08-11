@@ -9,6 +9,8 @@ export default function LayerPanel() {
   const toggle = useLayerStore((s) => s.toggle);
   const showOrbits = useViewStore((s) => s.showOrbits);
   const toggleOrbits = useViewStore((s) => s.toggleOrbits);
+  const showPlates = useViewStore((s) => s.showPlates);
+  const togglePlates = useViewStore((s) => s.togglePlates);
 
   return (
     <nav
@@ -62,6 +64,18 @@ export default function LayerPanel() {
                   </span>
                 )}
               </button>
+
+              {layer.id === "earthquakes" && on && (
+                <label className="ml-[26px] mt-0.5 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-[11px] text-zinc-400 transition-colors hover:text-zinc-200">
+                  <input
+                    type="checkbox"
+                    checked={showPlates}
+                    onChange={togglePlates}
+                    className="h-3 w-3 accent-orange-400"
+                  />
+                  Plate boundaries
+                </label>
+              )}
 
               {layer.id === "satellites" && on && (
                 <label className="ml-[26px] mt-0.5 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-[11px] text-zinc-400 transition-colors hover:text-zinc-200">

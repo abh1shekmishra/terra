@@ -41,7 +41,7 @@ export async function GET() {
   try {
     const res = await fetch(
       "https://eonet.gsfc.nasa.gov/api/v3/events?status=open",
-      { next: { revalidate: 300 } },
+      { cache: "no-store" },
     );
     if (!res.ok) throw new Error(`EONET responded ${res.status}`);
     const data = (await res.json()) as EonetResponse;

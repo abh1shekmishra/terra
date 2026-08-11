@@ -34,7 +34,7 @@ function parseTle(text: string, group: string): Sat[] {
 async function fetchGroup(group: string): Promise<Sat[]> {
   const res = await fetch(
     `https://celestrak.org/NORAD/elements/gp.php?GROUP=${group}&FORMAT=tle`,
-    { next: { revalidate: 3600 } },
+    { cache: "no-store" },
   );
   if (!res.ok) return [];
   return parseTle(await res.text(), group);
