@@ -6,6 +6,7 @@ import { useViewStore } from "@/store/useViewStore";
 import { feltRadiusKm, magnitudeColor } from "@/lib/earthquakes";
 import { categoryColor } from "@/lib/events";
 import { satelliteColor } from "@/lib/satellites";
+import { useSatcat } from "@/lib/satcat";
 
 const ALERT_COLORS: Record<string, string> = {
   green: "#22c55e",
@@ -205,6 +206,7 @@ function SatelliteDetails({
   const setRide = useViewStore((s) => s.setRide);
   const stopRide = useViewStore((s) => s.stopRide);
   const riding = useViewStore((s) => s.rideSatId) === data.id;
+  const { data: satcat, isPending: satcatLoading } = useSatcat(data.id);
   return (
     <>
       <div className="flex items-center gap-2">
@@ -231,6 +233,20 @@ function SatelliteDetails({
           value={`${data.lat.toFixed(1)}°, ${data.lng.toFixed(1)}°`}
         />
       </div>
+
+      {satcat && (
+        <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-white/5 pt-3">
+          {satcat.launchDate && <Stat label="Launched" value={satcat.launchDate} />}
+          {satcat.launchSite && <Stat label="From" value={satcat.launchSite} />}
+          {satcat.owner && <Stat label="Owner" value={satcat.owner} />}
+          {satcat.type && <Stat label="Type" value={satcat.type} />}
+          {satcat.status && <Stat label="Status" value={satcat.status} />}
+          {satcat.designator && <Stat label="Int'l ID" value={satcat.designator} />}
+        </div>
+      )}
+      {satcatLoading && (
+        <div className="mt-2 text-[11px] text-zinc-500">Loading mission data…</div>
+      )}
 
       <button
         type="button"
