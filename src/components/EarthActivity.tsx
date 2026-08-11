@@ -70,7 +70,7 @@ export default function EarthActivity() {
     .join(", ");
 
   return (
-    <div className="pointer-events-auto w-64 rounded-2xl border border-white/10 bg-zinc-950/55 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl">
+    <div className="pointer-events-auto w-44 rounded-2xl border border-white/10 bg-zinc-950/55 p-3.5 shadow-2xl shadow-black/40 backdrop-blur-xl sm:w-64 sm:p-5">
       <div className="flex items-center justify-between">
         {live ? (
           <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
@@ -110,7 +110,7 @@ export default function EarthActivity() {
               className="h-2 w-2 shrink-0 translate-y-[3px] rounded-full"
               style={{ backgroundColor: l.color }}
             />
-            <span className="text-xl font-semibold tabular-nums leading-none text-white">
+            <span className="text-lg font-semibold tabular-nums leading-none text-white sm:text-xl">
               {counts[l.id] === null ? "…" : counts[l.id]!.toLocaleString()}
             </span>
             <span className="text-xs text-zinc-400">{NOUN[l.id]}</span>

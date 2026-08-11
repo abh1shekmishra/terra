@@ -45,7 +45,7 @@ export default function TimeScrubber() {
   const cursor = cursorTime(windowKey, live, progress);
 
   return (
-    <div className="pointer-events-auto flex items-center gap-3 rounded-2xl border border-white/10 bg-zinc-950/60 px-3 py-2 shadow-2xl shadow-black/40 backdrop-blur-xl">
+    <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-white/10 bg-zinc-950/60 px-2.5 py-2 shadow-2xl shadow-black/40 backdrop-blur-xl sm:gap-3 sm:px-3">
       <div className="flex items-center gap-0.5 rounded-lg bg-white/5 p-0.5">
         {WINDOWS.map((w) => (
           <button
@@ -79,10 +79,10 @@ export default function TimeScrubber() {
         value={Math.round((live ? 1 : progress) * 1000)}
         onChange={(e) => setProgress(Number(e.target.value) / 1000)}
         aria-label="Timeline position"
-        className="h-1.5 w-52 cursor-pointer appearance-none rounded-full bg-white/15 accent-sky-400"
+        className="h-1.5 w-24 cursor-pointer appearance-none rounded-full bg-white/15 accent-sky-400 sm:w-52"
       />
 
-      <span className="w-28 shrink-0 text-center text-[11px] tabular-nums text-zinc-300">
+      <span className="hidden w-28 shrink-0 text-center text-[11px] tabular-nums text-zinc-300 sm:block">
         {live ? "Now" : formatCursor(cursor)}
       </span>
 

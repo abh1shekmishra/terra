@@ -13,7 +13,7 @@ export default function LayerPanel() {
   return (
     <nav
       aria-label="Data layers"
-      className="pointer-events-auto w-60 rounded-2xl border border-white/10 bg-zinc-950/55 p-2.5 shadow-2xl shadow-black/40 backdrop-blur-xl"
+      className="pointer-events-auto w-52 rounded-2xl border border-white/10 bg-zinc-950/55 p-2.5 shadow-2xl shadow-black/40 backdrop-blur-xl sm:w-60"
     >
       <div className="px-2 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
         Layers
