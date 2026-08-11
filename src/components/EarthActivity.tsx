@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LAYERS, type LayerId } from "@/lib/layers";
 import { useLayerStore } from "@/store/useLayerStore";
+import { STEPS, cursorTime, useTimeStore } from "@/store/useTimeStore";
 import { magnitudeColor, useEarthquakes } from "@/lib/earthquakes";
 import { useFlights } from "@/lib/flights";
 import { useEvents } from "@/lib/events";
@@ -26,6 +27,9 @@ function utcTime(ms: number): string {
 
 export default function EarthActivity() {
   const enabled = useLayerStore((s) => s.enabled);
+  const live = useTimeStore((s) => s.live);
+  const windowKey = useTimeStore((s) => s.windowKey);
+  const step = useTimeStore((s) => (s.live ? STEPS : Math.round(s.progress * STEPS)));
   const eq = useEarthquakes();
   const fl = useFlights(enabled.flights);
   const ev = useEvents(enabled.events);
@@ -63,15 +67,31 @@ export default function EarthActivity() {
   return (
     <div className="pointer-events-auto w-64 rounded-2xl border border-white/10 bg-zinc-950/55 p-5 shadow-2xl shadow-black/40 backdrop-blur-xl">
       <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
-          <span className="relative flex h-1.5 w-1.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75 motion-reduce:hidden" />
-            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+        {live ? (
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75 motion-reduce:hidden" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            </span>
+            Live
           </span>
-          Live
-        </span>
+        ) : (
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-amber-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+            History
+          </span>
+        )}
         <span className="text-[11px] tabular-nums text-zinc-500">
-          {utcTime(updatedAt)}
+          {live
+            ? utcTime(updatedAt)
+            : new Date(
+                cursorTime(windowKey, false, step / STEPS),
+              ).toLocaleString([], {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
         </span>
       </div>
 

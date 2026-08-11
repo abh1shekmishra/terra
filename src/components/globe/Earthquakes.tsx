@@ -15,6 +15,7 @@ import {
   useEarthquakes,
 } from "@/lib/earthquakes";
 import { useSelectionStore } from "@/store/useSelectionStore";
+import { STEPS, WINDOW_MS, useTimeStore } from "@/store/useTimeStore";
 
 const CORE_SURFACE = GLOBE_RADIUS + 0.008;
 const DOME_SURFACE = GLOBE_RADIUS + 0.002;
@@ -40,6 +41,11 @@ export default function Earthquakes() {
   const select = useSelectionStore((s) => s.select);
   const [hovered, setHovered] = useState<number | null>(null);
 
+  // Time Machine: when scrubbing history, only show quakes up to the cursor.
+  const live = useTimeStore((s) => s.live);
+  const windowKey = useTimeStore((s) => s.windowKey);
+  const step = useTimeStore((s) => (s.live ? -1 : Math.round(s.progress * STEPS)));
+
   const { corePos, colors, aColor, aSeed, aSpeed } = useMemo(() => {
     const corePos = quakes.map((q) => latLngToVector3(q.lat, q.lng, CORE_SURFACE));
     const colors = quakes.map((q) => magnitudeColor(q.mag));
@@ -61,12 +67,18 @@ export default function Earthquakes() {
     const dome = domeRef.current;
     if (!core || !dome) return;
 
+    const cursor = live
+      ? Infinity
+      : Date.now() - WINDOW_MS[windowKey] * (1 - step / STEPS);
+
     quakes.forEach((q, i) => {
       const p = corePos[i];
+      // Hidden (scaled to 0) if this quake is still in the future of the cursor.
+      const visible = live || q.time <= cursor;
 
       dummy.position.copy(p);
       dummy.quaternion.identity();
-      dummy.scale.setScalar(coreSize(q.mag));
+      dummy.scale.setScalar(visible ? coreSize(q.mag) : 0);
       dummy.updateMatrix();
       core.setMatrixAt(i, dummy.matrix);
       core.setColorAt(i, colors[i]);
@@ -76,7 +88,9 @@ export default function Earthquakes() {
       // quake comfortably visible without zooming in.
       const normal = p.clone().normalize();
       const feltWorld = feltRadiusWorld(q.mag, q.depth, GLOBE_RADIUS);
-      const radius = THREE.MathUtils.clamp(0.04 + feltWorld * 1.8, 0.04, 0.34);
+      const radius = visible
+        ? THREE.MathUtils.clamp(0.04 + feltWorld * 1.8, 0.04, 0.34)
+        : 0;
       quat.setFromUnitVectors(UP, normal);
       dummy.position.copy(normal.multiplyScalar(DOME_SURFACE));
       dummy.quaternion.copy(quat);
@@ -90,7 +104,7 @@ export default function Earthquakes() {
     core.instanceMatrix.needsUpdate = true;
     dome.instanceMatrix.needsUpdate = true;
     if (core.instanceColor) core.instanceColor.needsUpdate = true;
-  }, [quakes, corePos, colors, count]);
+  }, [quakes, corePos, colors, count, step, live, windowKey]);
 
   useFrame(({ clock }) => {
     if (domeMat.current) domeMat.current.uniforms.uTime.value = clock.elapsedTime;

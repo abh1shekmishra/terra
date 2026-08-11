@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { useQuery } from "@tanstack/react-query";
+import { quakeFeed, useTimeStore } from "@/store/useTimeStore";
 
 /** A single earthquake, normalised from the USGS GeoJSON feed. */
 export interface Earthquake {
@@ -20,9 +21,8 @@ export interface Earthquake {
   sig: number; // event significance score
 }
 
-/** Past 24 hours, all magnitudes. Updated by USGS about once a minute. */
-const USGS_FEED =
-  "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson";
+const USGS_BASE =
+  "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary";
 
 interface UsgsFeature {
   id: string;
@@ -45,8 +45,8 @@ interface UsgsResponse {
   features: UsgsFeature[];
 }
 
-export async function fetchEarthquakes(): Promise<Earthquake[]> {
-  const res = await fetch(USGS_FEED);
+export async function fetchEarthquakes(feed = "all_day"): Promise<Earthquake[]> {
+  const res = await fetch(`${USGS_BASE}/${feed}.geojson`);
   if (!res.ok) throw new Error(`USGS feed responded ${res.status}`);
   const json = (await res.json()) as UsgsResponse;
 
@@ -72,11 +72,13 @@ export async function fetchEarthquakes(): Promise<Earthquake[]> {
     .sort((a, b) => a.mag - b.mag); // draw larger quakes last, on top
 }
 
-/** Live earthquakes, refreshed every minute. Shared across every consumer. */
+/** Live earthquakes for the current time window, refreshed every minute. */
 export function useEarthquakes() {
+  const windowKey = useTimeStore((s) => s.windowKey);
+  const feed = quakeFeed(windowKey);
   return useQuery({
-    queryKey: ["earthquakes"],
-    queryFn: fetchEarthquakes,
+    queryKey: ["earthquakes", feed],
+    queryFn: () => fetchEarthquakes(feed),
     refetchInterval: 60_000,
   });
 }

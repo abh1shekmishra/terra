@@ -8,6 +8,7 @@ import { latLngToVector3 } from "@/lib/geo";
 import { GLOBE_RADIUS } from "./constants";
 import { categoryColor, useEvents } from "@/lib/events";
 import { useSelectionStore } from "@/store/useSelectionStore";
+import { STEPS, WINDOW_MS, useTimeStore } from "@/store/useTimeStore";
 
 const SURFACE = GLOBE_RADIUS + 0.014;
 const dummy = new THREE.Object3D();
@@ -31,10 +32,15 @@ export default function Events() {
   const select = useSelectionStore((s) => s.select);
   const [hovered, setHovered] = useState<number | null>(null);
 
-  const { positions, colors } = useMemo(() => {
+  const live = useTimeStore((s) => s.live);
+  const windowKey = useTimeStore((s) => s.windowKey);
+  const step = useTimeStore((s) => (s.live ? -1 : Math.round(s.progress * STEPS)));
+
+  const { positions, colors, times } = useMemo(() => {
     const positions = events.map((e) => latLngToVector3(e.lat, e.lng, SURFACE));
     const colors = events.map((e) => new THREE.Color(categoryColor(e.cat)));
-    return { positions, colors };
+    const times = events.map((e) => new Date(e.date).getTime());
+    return { positions, colors, times };
   }, [events]);
 
   useLayoutEffect(() => {
@@ -42,14 +48,19 @@ export default function Events() {
     const halo = haloRef.current;
     if (!core || !halo) return;
 
+    const cursor = live
+      ? Infinity
+      : Date.now() - WINDOW_MS[windowKey] * (1 - step / STEPS);
+
     positions.forEach((_, i) => {
+      const visible = live || times[i] <= cursor;
       dummy.position.copy(positions[i]);
-      dummy.scale.setScalar(0.011);
+      dummy.scale.setScalar(visible ? 0.011 : 0);
       dummy.updateMatrix();
       core.setMatrixAt(i, dummy.matrix);
       core.setColorAt(i, colors[i]);
 
-      dummy.scale.setScalar(0.028);
+      dummy.scale.setScalar(visible ? 0.028 : 0);
       dummy.updateMatrix();
       halo.setMatrixAt(i, dummy.matrix);
       halo.setColorAt(i, colors[i]);
@@ -61,7 +72,7 @@ export default function Events() {
     halo.instanceMatrix.needsUpdate = true;
     if (core.instanceColor) core.instanceColor.needsUpdate = true;
     if (halo.instanceColor) halo.instanceColor.needsUpdate = true;
-  }, [positions, colors, count]);
+  }, [positions, colors, times, count, step, live, windowKey]);
 
   useFrame(({ clock }) => {
     if (!haloRef.current) return;
