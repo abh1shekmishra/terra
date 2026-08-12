@@ -18,14 +18,10 @@ const PLANE_SIZE = 0.032;
 // when a search is active (so any flight/airline can be found and shown).
 const DEFAULT_RENDER = 2500;
 const SEARCH_RENDER = 4000;
-const WORLD_UP = new THREE.Vector3(0, 1, 0);
-
 const SELECTED_COLOR = new THREE.Color("#fbbf24"); // yellow highlight
 const dummy = new THREE.Object3D();
 const _pos = new THREE.Vector3();
 const _up = new THREE.Vector3();
-const _north = new THREE.Vector3();
-const _east = new THREE.Vector3();
 const _forward = new THREE.Vector3();
 const _right = new THREE.Vector3();
 const _basis = new THREE.Matrix4();
@@ -155,18 +151,35 @@ export default function Flights() {
       _pos.copy(latLngToVector3(lat[i], lng[i], altOffset));
       _up.copy(_pos).normalize();
 
-      // Tangent-plane basis so the icon lies flat and points along its heading.
-      _north.copy(WORLD_UP).addScaledVector(_up, -WORLD_UP.dot(_up));
-      if (_north.lengthSq() < 1e-6) _north.set(1, 0, 0); // pole guard
-      _north.normalize();
-      _east.crossVectors(_north, _up).normalize();
+      // Orient the nose along the actual direction of travel: look a small step
+      // ahead using the SAME great-circle formula the plane moves by, so the
+      // heading the icon shows always matches where it is going.
       const theta = (hdg[i] * Math.PI) / 180;
+      const phi1 = (lat[i] * Math.PI) / 180;
+      const lam1 = (lng[i] * Math.PI) / 180;
+      const ad = 0.02; // ~1.1° look-ahead, plenty for a stable direction
+      const sinAhead =
+        Math.sin(phi1) * Math.cos(ad) +
+        Math.cos(phi1) * Math.sin(ad) * Math.cos(theta);
+      const aheadPhi = Math.asin(Math.max(-1, Math.min(1, sinAhead)));
+      const aheadLam =
+        lam1 +
+        Math.atan2(
+          Math.sin(theta) * Math.sin(ad) * Math.cos(phi1),
+          Math.cos(ad) - Math.sin(phi1) * sinAhead,
+        );
       _forward
-        .copy(_north)
-        .multiplyScalar(Math.cos(theta))
-        .addScaledVector(_east, Math.sin(theta))
+        .copy(
+          latLngToVector3(
+            (aheadPhi * 180) / Math.PI,
+            (aheadLam * 180) / Math.PI,
+            altOffset,
+          ),
+        )
+        .sub(_pos)
         .normalize();
       _right.crossVectors(_forward, _up).normalize();
+      _forward.crossVectors(_up, _right).normalize(); // keep it perpendicular to up
       _basis.makeBasis(_right, _forward, _up);
 
       dummy.position.copy(_pos);
