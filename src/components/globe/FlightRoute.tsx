@@ -10,7 +10,6 @@ import { useSelectionStore } from "@/store/useSelectionStore";
 import {
   isPositionOnRoute,
   useFlightDetail,
-  useFlightTrack,
   type FlightAirport,
 } from "@/lib/flightDetail";
 
@@ -44,35 +43,6 @@ function buildArcPoints(o: LatLng, d: LatLng): THREE.Vector3[] {
     pts.push(v);
   }
   return pts;
-}
-
-/**
- * The flown track, subdivided along great circles between the (often sparse)
- * OpenSky waypoints so each segment hugs the globe instead of chording straight
- * through it. Kept at a constant low altitude so plane icons sit above it.
- */
-function buildTrackPoints(pts: LatLng[]): THREE.Vector3[] {
-  if (pts.length < 2) return [];
-  const out: THREE.Vector3[] = [];
-  for (let i = 0; i < pts.length - 1; i++) {
-    const a = latLngToVector3(pts[i].lat, pts[i].lng, 1);
-    const b = latLngToVector3(pts[i + 1].lat, pts[i + 1].lng, 1);
-    const omega = Math.acos(THREE.MathUtils.clamp(a.dot(b), -1, 1));
-    const steps = Math.max(1, Math.round((omega / Math.PI) * 180));
-    const sinO = Math.sin(omega) || 1;
-    for (let k = i === 0 ? 0 : 1; k <= steps; k++) {
-      const t = k / steps;
-      const v =
-        omega < 1e-4
-          ? a.clone()
-          : a
-              .clone()
-              .multiplyScalar(Math.sin((1 - t) * omega) / sinO)
-              .addScaledVector(b, Math.sin(t * omega) / sinO);
-      out.push(v.normalize().multiplyScalar(LINE_RADIUS));
-    }
-  }
-  return out;
 }
 
 /** A labelled endpoint marker: a coloured dot with a FROM/TO caption. */
@@ -110,10 +80,11 @@ function EndpointMarker({
 }
 
 /**
- * The selected flight's path, in one hue: dark/golden yellow for the flown
- * (covered) part — the aircraft's real ADS-B track, so it always matches the
- * plane — and light yellow for the remaining leg to the destination, shown only
- * when the scheduled route is consistent with the live position.
+ * The selected flight's route in two shades: dark/golden yellow for the flown
+ * (covered) leg from the origin to the aircraft's live position, and light
+ * yellow for the remaining leg to the destination. Both are great-circle arcs
+ * from reliable data (airport coords + live position), drawn only when the
+ * scheduled route is consistent with where the plane actually is.
  */
 export default function FlightRoute() {
   const selected = useSelectionStore((s) => s.selected);
@@ -123,10 +94,6 @@ export default function FlightRoute() {
     flight?.id ?? "",
     Boolean(flight),
   );
-  const { data: trackData } = useFlightTrack(flight?.id ?? "", Boolean(flight));
-
-  const path = useMemo(() => trackData?.path ?? [], [trackData]);
-  const hasTrack = path.length >= 2;
 
   // Trust the scheduled endpoints only if the live position is on that route.
   const onRoute = Boolean(
@@ -136,20 +103,13 @@ export default function FlightRoute() {
       isPositionOnRoute(detail.origin, detail.destination, flight.lat, flight.lng),
   );
 
-  // Real flown track (covered), subdivided so it hugs the globe.
-  const flownPoints = useMemo(
-    () => (hasTrack ? buildTrackPoints(path) : null),
-    [path, hasTrack],
-  );
-
-  // Covered distance before our track window: origin -> start of known track.
+  // Covered leg: origin -> current position.
   const coveredPoints = useMemo(() => {
     if (!onRoute || !flight || !detail?.origin) return null;
-    const end: LatLng = hasTrack ? { lat: path[0].lat, lng: path[0].lng } : flight;
-    return buildArcPoints(detail.origin, end);
-  }, [onRoute, flight, detail, path, hasTrack]);
+    return buildArcPoints(detail.origin, flight);
+  }, [onRoute, flight, detail]);
 
-  // Remaining leg to destination (predicted).
+  // Remaining leg: current position -> destination.
   const remainingPoints = useMemo(() => {
     if (!onRoute || !flight || !detail?.destination) return null;
     return buildArcPoints(flight, detail.destination);
@@ -162,17 +122,6 @@ export default function FlightRoute() {
       {coveredPoints && (
         <Line
           points={coveredPoints}
-          color={FLOWN_COLOR}
-          lineWidth={2}
-          transparent
-          opacity={0.5}
-          depthWrite={false}
-          toneMapped={false}
-        />
-      )}
-      {flownPoints && (
-        <Line
-          points={flownPoints}
           color={FLOWN_COLOR}
           lineWidth={2.8}
           transparent
