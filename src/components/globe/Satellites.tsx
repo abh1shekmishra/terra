@@ -220,7 +220,7 @@ export default function Satellites() {
         group: rec.tle.group,
         altKm: geo.height,
         velKms: velocity,
-        incDeg: satellite.radiansToDegrees(rec.satrec.inclo),
+        incDeg: (rec.satrec.inclo * 180) / Math.PI,
         periodMin: rec.satrec.no ? (2 * Math.PI) / rec.satrec.no : 0,
         lat,
         lng,
