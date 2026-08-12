@@ -8,11 +8,19 @@ import { latLngToVector3 } from "@/lib/geo";
 import { GLOBE_RADIUS } from "./constants";
 import { altitudeColor, EARTH_RADIUS_M, useFlights } from "@/lib/flights";
 import { useSelectionStore } from "@/store/useSelectionStore";
+import { useFlightSearchStore } from "@/store/useFlightSearchStore";
+import { flightMatches, flightLabel } from "@/lib/flightSearch";
+import { airlineForCallsign } from "@/data/airlines";
 
 const BASE_ALT = GLOBE_RADIUS + 0.02;
 const PLANE_SIZE = 0.032;
+// Render caps: a sampled subset by default (for framerate), the matching set
+// when a search is active (so any flight/airline can be found and shown).
+const DEFAULT_RENDER = 2500;
+const SEARCH_RENDER = 4000;
 const WORLD_UP = new THREE.Vector3(0, 1, 0);
 
+const SELECTED_COLOR = new THREE.Color("#fbbf24"); // yellow highlight
 const dummy = new THREE.Object3D();
 const _pos = new THREE.Vector3();
 const _up = new THREE.Vector3();
@@ -22,33 +30,38 @@ const _forward = new THREE.Vector3();
 const _right = new THREE.Vector3();
 const _basis = new THREE.Matrix4();
 
-/** A simple top-view aeroplane silhouette drawn to a canvas (no external asset). */
+/** A clean top-view airliner silhouette drawn to a canvas (no external asset). */
 function createPlaneTexture(): THREE.CanvasTexture {
-  const size = 64;
+  const size = 128;
   const canvas = document.createElement("canvas");
   canvas.width = size;
   canvas.height = size;
   const ctx = canvas.getContext("2d")!;
   ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = "rgba(0,0,0,0.35)";
+  ctx.lineWidth = 3;
+  ctx.lineJoin = "round";
   ctx.beginPath();
-  ctx.moveTo(32, 4); // nose (points up = +Y)
-  ctx.lineTo(37, 26);
-  ctx.lineTo(60, 40);
-  ctx.lineTo(60, 46);
-  ctx.lineTo(37, 40);
-  ctx.lineTo(36, 52);
-  ctx.lineTo(45, 61);
-  ctx.lineTo(45, 63);
-  ctx.lineTo(32, 58);
-  ctx.lineTo(19, 63);
-  ctx.lineTo(19, 61);
-  ctx.lineTo(28, 52);
-  ctx.lineTo(27, 40);
-  ctx.lineTo(4, 46);
-  ctx.lineTo(4, 40);
-  ctx.lineTo(27, 26);
+  ctx.moveTo(64, 12); // nose (points up = +Y)
+  ctx.bezierCurveTo(71, 24, 71, 42, 70, 54); // right fuselage to wing root
+  ctx.lineTo(118, 80); // right wing (swept back)
+  ctx.lineTo(118, 88);
+  ctx.lineTo(70, 72);
+  ctx.lineTo(69, 94); // rear fuselage
+  ctx.lineTo(86, 110); // right tailplane
+  ctx.lineTo(86, 116);
+  ctx.lineTo(64, 106);
+  ctx.lineTo(42, 116); // left tailplane
+  ctx.lineTo(42, 110);
+  ctx.lineTo(59, 94);
+  ctx.lineTo(58, 72);
+  ctx.lineTo(10, 88); // left wing
+  ctx.lineTo(10, 80);
+  ctx.lineTo(58, 54);
+  ctx.bezierCurveTo(57, 42, 57, 24, 64, 12); // left fuselage to nose
   ctx.closePath();
   ctx.fill();
+  ctx.stroke();
   const texture = new THREE.CanvasTexture(canvas);
   texture.anisotropy = 4;
   return texture;
@@ -57,13 +70,28 @@ function createPlaneTexture(): THREE.CanvasTexture {
 /** Live aircraft as heading-aligned plane icons that glide between refreshes. */
 export default function Flights() {
   const { data } = useFlights(true);
-  const flights = useMemo(() => data?.flights ?? [], [data]);
+  const query = useFlightSearchStore((s) => s.query);
+  const flights = useMemo(() => {
+    const all = data?.flights ?? [];
+    const q = query.trim();
+    if (q) {
+      const matched = all.filter((f) => flightMatches(f, q));
+      return matched.slice(0, SEARCH_RENDER);
+    }
+    if (all.length <= DEFAULT_RENDER) return all;
+    // Even global sample so the default view isn't biased to the feed's order.
+    const step = Math.ceil(all.length / DEFAULT_RENDER);
+    return all.filter((_, i) => i % step === 0);
+  }, [data, query]);
   const count = flights.length;
 
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const texture = useMemo(() => createPlaneTexture(), []);
   const { gl } = useThree();
   const select = useSelectionStore((s) => s.select);
+  const selectedId = useSelectionStore((s) =>
+    s.selected?.kind === "flight" ? s.selected.data.id : null,
+  );
   const [hovered, setHovered] = useState<number | null>(null);
 
   // Mutable per-aircraft state, advanced each frame by dead-reckoning.
@@ -88,11 +116,12 @@ export default function Flights() {
     if (!mesh) return;
     const color = new THREE.Color();
     for (let i = 0; i < count; i++) {
-      mesh.setColorAt(i, altitudeColor(live.alt[i], color));
+      if (flights[i].id === selectedId) mesh.setColorAt(i, SELECTED_COLOR);
+      else mesh.setColorAt(i, altitudeColor(live.alt[i], color));
     }
     mesh.count = count;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [live, count]);
+  }, [live, count, selectedId, flights]);
 
   useFrame((_, delta) => {
     const mesh = meshRef.current;
@@ -142,7 +171,10 @@ export default function Flights() {
 
       dummy.position.copy(_pos);
       dummy.quaternion.setFromRotationMatrix(_basis);
-      dummy.scale.setScalar(PLANE_SIZE);
+      // Enlarge the selected aircraft's icon so it stands out.
+      dummy.scale.setScalar(
+        flights[i].id === selectedId ? PLANE_SIZE * 1.9 : PLANE_SIZE,
+      );
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
     }
@@ -181,6 +213,7 @@ export default function Flights() {
         onPointerOut={handleOut}
         onClick={handleClick}
         frustumCulled={false}
+        renderOrder={2}
       >
         <planeGeometry args={[1, 1]} />
         <meshBasicMaterial
@@ -212,10 +245,16 @@ export default function Flights() {
                   {active.cs}
                 </span>
               </div>
-              {active.co && (
+              {airlineForCallsign(active.cs) ? (
                 <div className="px-3 pt-1 text-xs leading-snug text-zinc-300">
-                  {active.co}
+                  {flightLabel(active.cs)}
                 </div>
+              ) : (
+                active.co && (
+                  <div className="px-3 pt-1 text-xs leading-snug text-zinc-300">
+                    {active.co}
+                  </div>
+                )
               )}
               <div className="flex gap-3 px-3 pb-2.5 pt-1 text-[11px] tabular-nums text-zinc-500">
                 <span>{Math.round(active.alt * 3.281).toLocaleString()} ft</span>

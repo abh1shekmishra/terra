@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Terra
 
-## Getting Started
+An interactive 3D globe that renders live planetary data in the browser — real-time
+flights, earthquakes, satellites, and surface wind on a photoreal Earth you can spin,
+zoom, and inspect.
 
-First, run the development server:
+Most "live data globe" sites do one thing: Flightradar shows planes, nullschool shows
+wind, USGS shows quakes. Terra puts them on a single globe, each as a toggleable layer,
+all from real public data.
+
+## Layers
+
+- **Flights** — live aircraft from OpenSky (ADS-B). Search by airline or flight number;
+  click a plane for its real flown track, route, aircraft type, and a photo of the
+  airframe.
+- **Earthquakes** — USGS real-time feed, sized by felt radius, with tectonic plate
+  boundaries and depth-on-click.
+- **Satellites** — CelesTrak TLEs propagated with SGP4: orbit trails, a "ride the
+  satellite" camera, and launch/mission metadata.
+- **Wind** — live global surface wind (Open-Meteo) as an animated particle-flow field.
+- **Natural events** — wildfires, storms, and volcanoes from NASA EONET.
+
+Every layer is real data, correctly geolocated, and refreshed on its own cadence.
+
+## Tech
+
+- Next.js (App Router), React, TypeScript
+- React Three Fiber / three.js, with custom GLSL shaders for the Earth (day/night
+  terminator, city lights, tangent-space normal mapping, atmosphere)
+- Zustand for state, TanStack Query for data, with server-side proxy routes for CORS
+  and caching
+- satellite.js for SGP4 orbital propagation
+
+## Data sources
+
+USGS · OpenSky · CelesTrak · Open-Meteo · NASA EONET · adsbdb · planespotters — all
+free and public.
+
+## Run locally
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Notes on data honesty
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Flight coverage is whatever OpenSky sees (roughly 6–11k aircraft) — excellent over
+  Europe and North America, sparser elsewhere. It is not the full picture a paid feed
+  like Flightradar24 has.
+- Scheduled flight routes come from public databases and can be outdated, so a route is
+  only drawn when it matches the aircraft's live position. The detail panel labels each
+  field as live telemetry or looked-up reference data.

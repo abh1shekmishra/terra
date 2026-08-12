@@ -9,6 +9,7 @@ describe("useLayerStore", () => {
         flights: false,
         events: false,
         satellites: false,
+        wind: false,
       },
     });
   });

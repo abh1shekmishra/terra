@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense, startTransition, useEffect, useMemo, useState } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
 import * as THREE from "three";
@@ -11,8 +11,10 @@ import Earthquakes from "./Earthquakes";
 import EarthquakeSelection from "./EarthquakeSelection";
 import PlateBoundaries from "./PlateBoundaries";
 import Flights from "./Flights";
+import FlightRoute, { FlightFocus } from "./FlightRoute";
 import Events from "./Events";
 import Satellites from "./Satellites";
+import Wind from "./Wind";
 import PlaceLabels from "./PlaceLabels";
 import { getSunDirection } from "@/lib/sun";
 import { useLayerStore } from "@/store/useLayerStore";
@@ -31,12 +33,34 @@ function SunUpdater({ sunDirection }: { sunDirection: THREE.Vector3 }) {
 }
 
 export default function Scene() {
-  const layers = useLayerStore((s) => s.enabled);
+  // Zustand subscribes via useSyncExternalStore, which forces a *synchronous*
+  // re-render of every subscriber on each change. If the Scene subscribed that
+  // way, mounting a heavy layer would block in the same task as the toggle's
+  // paint, so the control feels laggy. Instead we mirror the layer/plate state
+  // into local React state and apply it inside a transition: the toggle (which
+  // subscribes directly) paints instantly, and the heavy 3D mount runs after,
+  // as a low-priority pass that can't block the click.
+  const [layers, setLayers] = useState(() => useLayerStore.getState().enabled);
+  const [showPlates, setShowPlates] = useState(
+    () => useViewStore.getState().showPlates,
+  );
+  useEffect(() => {
+    const unsubLayers = useLayerStore.subscribe((s) =>
+      startTransition(() => setLayers(s.enabled)),
+    );
+    const unsubView = useViewStore.subscribe((s) =>
+      startTransition(() => setShowPlates(s.showPlates)),
+    );
+    return () => {
+      unsubLayers();
+      unsubView();
+    };
+  }, []);
+
   const live = useTimeStore((s) => s.live);
   const clearSelection = useSelectionStore((s) => s.clear);
   const stopRide = useViewStore((s) => s.stopRide);
   const riding = useViewStore((s) => s.rideSatId !== null);
-  const showPlates = useViewStore((s) => s.showPlates);
 
   const handleMissed = () => {
     clearSelection();
@@ -81,11 +105,14 @@ export default function Scene() {
         <Clouds sunDirection={sunDirection} />
       </Suspense>
       <Atmosphere />
+      {layers.wind && <Wind />}
       <PlaceLabels />
       {layers.earthquakes && showPlates && <PlateBoundaries />}
       {layers.earthquakes && <Earthquakes />}
       {layers.earthquakes && <EarthquakeSelection />}
       {layers.flights && live && <Flights />}
+      {layers.flights && <FlightRoute />}
+      {layers.flights && <FlightFocus />}
       {layers.events && <Events />}
       {layers.satellites && live && <Satellites />}
 

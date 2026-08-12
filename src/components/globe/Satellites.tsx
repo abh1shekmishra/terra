@@ -89,7 +89,8 @@ export default function Satellites() {
   // once into a single line-segment buffer (one draw call) coloured by group.
   const [trails, setTrails] = useState<THREE.BufferGeometry | null>(null);
   useEffect(() => {
-    if (recs.length === 0) {
+    // Only pay for the (heavy) trail propagation when orbits are actually shown.
+    if (recs.length === 0 || !showOrbits) {
       setTrails(null);
       return;
     }
@@ -130,7 +131,7 @@ export default function Satellites() {
     geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
     setTrails(geom);
     return () => geom.dispose();
-  }, [recs]);
+  }, [recs, showOrbits]);
 
   useLayoutEffect(() => {
     const mesh = meshRef.current;

@@ -2,6 +2,8 @@ import GlobeCanvas from "@/components/GlobeCanvas";
 import EarthActivity from "@/components/EarthActivity";
 import LayerPanel from "@/components/LayerPanel";
 import DetailPanel from "@/components/DetailPanel";
+import GlobeLoader from "@/components/GlobeLoader";
+import FlightSearch from "@/components/FlightSearch";
 import TimeScrubber from "@/components/TimeScrubber";
 
 // Temporarily hidden while we finish other areas (kept, not removed).
@@ -25,11 +27,16 @@ export default function Home() {
         <EarthActivity />
       </div>
 
+      <div className="pointer-events-none absolute left-1/2 top-4 z-10 flex -translate-x-1/2 flex-col items-center gap-2 sm:top-6">
+        <FlightSearch />
+        <GlobeLoader />
+      </div>
+
       <div className="absolute bottom-20 left-3 z-10 sm:bottom-6 sm:left-6">
         <LayerPanel />
       </div>
 
-      <div className="pointer-events-none absolute bottom-24 left-1/2 z-20 flex w-full -translate-x-1/2 justify-center px-4 sm:bottom-28">
+      <div className="pointer-events-none absolute bottom-3 right-3 z-20 flex sm:bottom-6 sm:right-6">
         <DetailPanel />
       </div>
 

@@ -10,7 +10,13 @@ interface LayerState {
 
 /** Global visibility state for every data layer, shared by the scene and UI. */
 export const useLayerStore = create<LayerState>((set) => ({
-  enabled: { earthquakes: true, flights: false, events: false, satellites: false },
+  enabled: {
+    earthquakes: false,
+    flights: true,
+    events: false,
+    satellites: false,
+    wind: false,
+  },
   toggle: (id) =>
     set((state) => ({
       enabled: { ...state.enabled, [id]: !state.enabled[id] },

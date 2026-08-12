@@ -5,19 +5,20 @@ import { LAYERS, type LayerId } from "@/lib/layers";
 import { useLayerStore } from "@/store/useLayerStore";
 import { STEPS, cursorTime, useTimeStore } from "@/store/useTimeStore";
 import { magnitudeColor, useEarthquakes } from "@/lib/earthquakes";
-import { useFlights } from "@/lib/flights";
+import { altitudeColor, useFlights } from "@/lib/flights";
 import { useEvents } from "@/lib/events";
 import { useSatellites } from "@/lib/satellites";
 
 // Soft reference maxima used only to normalise the aggregate activity meter.
-const CAPS: Record<LayerId, number> = {
+// Only "countable" layers appear here; field layers like wind are excluded.
+const CAPS: Partial<Record<LayerId, number>> = {
   earthquakes: 300,
   flights: 1500,
   events: 1500,
   satellites: 1000,
 };
 
-const NOUN: Record<LayerId, string> = {
+const NOUN: Partial<Record<LayerId, string>> = {
   earthquakes: "earthquakes",
   flights: "aircraft",
   events: "events",
@@ -39,7 +40,7 @@ export default function EarthActivity() {
   const sat = useSatellites(enabled.satellites);
   const [showWhy, setShowWhy] = useState(false);
 
-  const counts: Record<LayerId, number | null> = {
+  const counts: Partial<Record<LayerId, number | null>> = {
     earthquakes: eq.data ? eq.data.length : null,
     flights: fl.data ? fl.data.flights.length : null,
     events: ev.data ? ev.data.events.length : null,
@@ -52,11 +53,14 @@ export default function EarthActivity() {
     enabled.events ? (ev.dataUpdatedAt ?? 0) : 0,
   );
 
-  const activeLayers = LAYERS.filter((l) => l.available && enabled[l.id]);
+  // Field layers (e.g. wind) have no count, so they're excluded from the console.
+  const activeLayers = LAYERS.filter(
+    (l) => l.available && enabled[l.id] && NOUN[l.id] !== undefined,
+  );
   const contributions = activeLayers.map((l) => ({
     layer: l,
-    value: Math.min((counts[l.id] ?? 0) / CAPS[l.id], 1),
-    count: counts[l.id],
+    value: Math.min((counts[l.id] ?? 0) / (CAPS[l.id] ?? 1), 1),
+    count: counts[l.id] ?? null,
   }));
   const activity = contributions.length
     ? Math.round(
@@ -67,6 +71,9 @@ export default function EarthActivity() {
 
   const magScale = [0, 2, 3, 4, 5, 6, 7]
     .map((m) => `#${magnitudeColor(m).getHexString()}`)
+    .join(", ");
+  const altScale = [0, 3000, 6000, 9000, 12000]
+    .map((a) => `#${altitudeColor(a).getHexString()}`)
     .join(", ");
 
   return (
@@ -111,7 +118,9 @@ export default function EarthActivity() {
               style={{ backgroundColor: l.color }}
             />
             <span className="text-lg font-semibold tabular-nums leading-none text-white sm:text-xl">
-              {counts[l.id] === null ? "…" : counts[l.id]!.toLocaleString()}
+              {(counts[l.id] ?? null) === null
+                ? "…"
+                : counts[l.id]!.toLocaleString()}
             </span>
             <span className="text-xs text-zinc-400">{NOUN[l.id]}</span>
           </li>
@@ -132,6 +141,22 @@ export default function EarthActivity() {
             <span>3</span>
             <span>5</span>
             <span>7+</span>
+          </div>
+        </div>
+      )}
+
+      {enabled.flights && (
+        <div className="mt-4">
+          <div className="mb-1 text-[9px] font-medium uppercase tracking-wider text-zinc-500">
+            Flight altitude
+          </div>
+          <div
+            className="h-1.5 w-full rounded-full"
+            style={{ background: `linear-gradient(90deg, ${altScale})` }}
+          />
+          <div className="mt-1 flex justify-between text-[9px] text-zinc-500">
+            <span>ground</span>
+            <span>cruise</span>
           </div>
         </div>
       )}

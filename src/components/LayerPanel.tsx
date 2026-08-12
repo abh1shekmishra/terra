@@ -4,6 +4,61 @@ import { LAYERS } from "@/lib/layers";
 import { useLayerStore } from "@/store/useLayerStore";
 import { useViewStore } from "@/store/useViewStore";
 
+/**
+ * A sub-option checkbox that matches the panel's toggles: a rounded square that
+ * fills with the layer's accent colour and reveals a checkmark when on. The
+ * real <input> is kept (transparent, on top) so keyboard + screen readers work.
+ */
+function SubToggle({
+  label,
+  checked,
+  onChange,
+  color,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+  color: string;
+}) {
+  return (
+    <label className="ml-[26px] mt-0.5 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-[11px] text-zinc-400 transition-colors duration-150 hover:text-zinc-200">
+      <span className="relative flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onChange}
+          className="peer absolute inset-0 cursor-pointer opacity-0"
+        />
+        <span
+          aria-hidden
+          className="h-3.5 w-3.5 rounded-[4px] border transition-colors duration-150 ease-out peer-focus-visible:ring-2 peer-focus-visible:ring-white/30"
+          style={{
+            backgroundColor: checked ? color : "rgba(255,255,255,0.05)",
+            borderColor: checked ? color : "rgba(255,255,255,0.28)",
+          }}
+        />
+        <svg
+          aria-hidden
+          viewBox="0 0 12 12"
+          className={`pointer-events-none absolute h-2.5 w-2.5 text-zinc-950 transition-transform duration-150 ease-out motion-reduce:transition-none ${
+            checked ? "scale-100" : "scale-0"
+          }`}
+        >
+          <path
+            d="M2.5 6.2 L5 8.4 L9.5 3.6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+      {label}
+    </label>
+  );
+}
+
 export default function LayerPanel() {
   const enabled = useLayerStore((s) => s.enabled);
   const toggle = useLayerStore((s) => s.toggle);
@@ -66,27 +121,21 @@ export default function LayerPanel() {
               </button>
 
               {layer.id === "earthquakes" && on && (
-                <label className="ml-[26px] mt-0.5 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-[11px] text-zinc-400 transition-colors hover:text-zinc-200">
-                  <input
-                    type="checkbox"
-                    checked={showPlates}
-                    onChange={togglePlates}
-                    className="h-3 w-3 accent-orange-400"
-                  />
-                  Plate boundaries
-                </label>
+                <SubToggle
+                  label="Plate boundaries"
+                  checked={showPlates}
+                  onChange={togglePlates}
+                  color="#fb923c"
+                />
               )}
 
               {layer.id === "satellites" && on && (
-                <label className="ml-[26px] mt-0.5 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-[11px] text-zinc-400 transition-colors hover:text-zinc-200">
-                  <input
-                    type="checkbox"
-                    checked={showOrbits}
-                    onChange={toggleOrbits}
-                    className="h-3 w-3 accent-sky-400"
-                  />
-                  Show orbits
-                </label>
+                <SubToggle
+                  label="Show orbits"
+                  checked={showOrbits}
+                  onChange={toggleOrbits}
+                  color="#38bdf8"
+                />
               )}
             </li>
           );
