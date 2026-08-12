@@ -39,6 +39,7 @@ export default function EarthActivity() {
   const ev = useEvents(enabled.events);
   const sat = useSatellites(enabled.satellites);
   const [showWhy, setShowWhy] = useState(false);
+  const [open, setOpen] = useState(false); // mobile expand/collapse
 
   const counts: Partial<Record<LayerId, number | null>> = {
     earthquakes: eq.data ? eq.data.length : null,
@@ -69,6 +70,10 @@ export default function EarthActivity() {
       )
     : 0;
 
+  const primary = activeLayers[0];
+  const primaryCount = primary ? (counts[primary.id] ?? null) : null;
+  const primaryNoun = primary ? NOUN[primary.id] : null;
+
   const magScale = [0, 2, 3, 4, 5, 6, 7]
     .map((m) => `#${magnitudeColor(m).getHexString()}`)
     .join(", ");
@@ -77,7 +82,38 @@ export default function EarthActivity() {
     .join(", ");
 
   return (
-    <div className="pointer-events-auto w-44 rounded-2xl border border-white/10 bg-zinc-950/55 p-3.5 shadow-2xl shadow-black/40 backdrop-blur-xl sm:w-64 sm:p-5">
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="Show Earth activity"
+        className={`pointer-events-auto items-center gap-2 rounded-full border border-white/10 bg-zinc-950/60 px-3 py-2 text-xs shadow-lg shadow-black/40 backdrop-blur-xl ${open ? "hidden" : "flex"} sm:hidden`}
+      >
+        {live ? (
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75 motion-reduce:hidden" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          </span>
+        ) : (
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+        )}
+        <span className="font-semibold tabular-nums text-zinc-100">
+          {primaryCount != null ? primaryCount.toLocaleString() : "Live"}
+        </span>
+        {primaryNoun && <span className="text-zinc-400">{primaryNoun}</span>}
+      </button>
+
+      <div
+        className={`pointer-events-auto relative w-52 rounded-2xl border border-white/10 bg-zinc-950/55 p-3.5 shadow-2xl shadow-black/40 backdrop-blur-xl sm:w-64 sm:p-5 ${open ? "block" : "hidden"} sm:block`}
+      >
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Hide"
+          className="absolute right-2.5 top-2.5 grid h-6 w-6 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-100 sm:hidden"
+        >
+          ✕
+        </button>
       <div className="flex items-center justify-between">
         {live ? (
           <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-emerald-400">
@@ -93,7 +129,7 @@ export default function EarthActivity() {
             History
           </span>
         )}
-        <span className="text-[11px] tabular-nums text-zinc-500">
+        <span className="hidden text-[11px] tabular-nums text-zinc-500 sm:block">
           {live
             ? utcTime(updatedAt)
             : new Date(
@@ -211,6 +247,7 @@ export default function EarthActivity() {
       <div className="mt-4 border-t border-white/5 pt-2.5 text-[10px] text-zinc-500">
         USGS · airplanes.live · NASA EONET
       </div>
-    </div>
+      </div>
+    </>
   );
 }

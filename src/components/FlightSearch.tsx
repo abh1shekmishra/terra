@@ -37,7 +37,7 @@ export default function FlightSearch() {
     : 0;
 
   return (
-    <div className="pointer-events-auto w-[300px] max-w-[calc(100vw-2rem)]">
+    <div className="pointer-events-auto w-full sm:w-[300px]">
       <div className="flex items-center gap-2 rounded-full border border-white/10 bg-zinc-950/65 px-3 py-2 shadow-lg shadow-black/40 backdrop-blur-md focus-within:border-white/25">
         <svg
           viewBox="0 0 20 20"

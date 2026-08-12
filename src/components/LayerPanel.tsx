@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { LAYERS } from "@/lib/layers";
 import { useLayerStore } from "@/store/useLayerStore";
 import { useViewStore } from "@/store/useViewStore";
@@ -66,14 +67,43 @@ export default function LayerPanel() {
   const toggleOrbits = useViewStore((s) => s.toggleOrbits);
   const showPlates = useViewStore((s) => s.showPlates);
   const togglePlates = useViewStore((s) => s.togglePlates);
+  const [open, setOpen] = useState(false); // mobile expand/collapse
+  const activeCount = LAYERS.filter((l) => enabled[l.id]).length;
 
   return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="Show layers"
+        className={`pointer-events-auto items-center gap-2 rounded-full border border-white/10 bg-zinc-950/60 px-3.5 py-2 text-xs font-medium text-zinc-100 shadow-lg shadow-black/40 backdrop-blur-xl ${open ? "hidden" : "flex"} sm:hidden`}
+      >
+        <svg viewBox="0 0 20 20" className="h-4 w-4 text-zinc-300" fill="none" aria-hidden>
+          <path d="M10 3 3 6.5 10 10l7-3.5L10 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+          <path d="M3 10.5 10 14l7-3.5M3 14 10 17.5 17 14" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        </svg>
+        Layers
+        <span className="rounded-full bg-white/10 px-1.5 text-[10px] tabular-nums text-zinc-300">
+          {activeCount}
+        </span>
+      </button>
+
     <nav
       aria-label="Data layers"
-      className="pointer-events-auto w-52 rounded-2xl border border-white/10 bg-zinc-950/55 p-2.5 shadow-2xl shadow-black/40 backdrop-blur-xl sm:w-60"
+      className={`pointer-events-auto w-52 rounded-2xl border border-white/10 bg-zinc-950/55 p-2.5 shadow-2xl shadow-black/40 backdrop-blur-xl sm:w-60 ${open ? "block" : "hidden"} sm:block`}
     >
-      <div className="px-2 pb-1.5 pt-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
-        Layers
+      <div className="flex items-center justify-between px-2 pb-1.5 pt-1">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+          Layers
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          aria-label="Hide layers"
+          className="grid h-5 w-5 place-items-center rounded-md text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-100 sm:hidden"
+        >
+          ✕
+        </button>
       </div>
       <ul className="flex flex-col gap-0.5">
         {LAYERS.map((layer) => {
@@ -142,5 +172,6 @@ export default function LayerPanel() {
         })}
       </ul>
     </nav>
+    </>
   );
 }

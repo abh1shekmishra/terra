@@ -439,7 +439,7 @@ export default function DetailPanel() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}
           transition={{ duration: 0.18, ease: "easeOut" }}
-          className="pointer-events-auto max-h-[calc(100dvh-2rem)] w-[340px] max-w-[calc(100vw-1.5rem)] overflow-y-auto overflow-x-hidden rounded-2xl border border-white/10 bg-zinc-950/55 p-4 shadow-2xl shadow-black/40 backdrop-blur-xl"
+          className="pointer-events-auto max-h-[70dvh] w-full overflow-y-auto overflow-x-hidden rounded-2xl border border-white/10 bg-zinc-950/55 p-4 shadow-2xl shadow-black/40 backdrop-blur-xl sm:max-h-[calc(100dvh-2rem)] sm:w-[340px]"
         >
           {selected.kind === "earthquake" && (
             <EarthquakeDetails data={selected.data} onClose={clear} />
