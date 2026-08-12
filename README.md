@@ -10,7 +10,7 @@ all from real public data.
 
 ## Layers
 
-- **Flights** — live aircraft from OpenSky (ADS-B). Search by airline or flight number;
+- **Flights** — live aircraft from airplanes.live (ADS-B). Search by airline or flight number;
   click a plane for its real flown track, route, aircraft type, and a photo of the
   airframe.
 - **Earthquakes** — USGS real-time feed, sized by felt radius, with tectonic plate
@@ -33,8 +33,8 @@ Every layer is real data, correctly geolocated, and refreshed on its own cadence
 
 ## Data sources
 
-USGS · OpenSky · CelesTrak · Open-Meteo · NASA EONET · adsbdb · planespotters — all
-free and public.
+USGS · airplanes.live · CelesTrak · Open-Meteo · NASA EONET · adsbdb · planespotters —
+all free and public.
 
 ## Run locally
 
@@ -47,9 +47,9 @@ Then open http://localhost:3000.
 
 ## Notes on data honesty
 
-- Flight coverage is whatever OpenSky sees (roughly 6–11k aircraft) — excellent over
-  Europe and North America, sparser elsewhere. It is not the full picture a paid feed
-  like Flightradar24 has.
+- Flight coverage is whatever airplanes.live's community ADS-B network sees, queried
+  across the world's traffic hotspots. It is dense over Europe and North America and
+  sparser elsewhere, and not the full picture a paid feed like Flightradar24 has.
 - Scheduled flight routes come from public databases and can be outdated, so a route is
   only drawn when it matches the aircraft's live position. The detail panel labels each
   field as live telemetry or looked-up reference data.

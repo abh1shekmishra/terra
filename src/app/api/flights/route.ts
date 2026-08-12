@@ -1,66 +1,111 @@
 import { NextResponse } from "next/server";
 
 /**
- * Server-side proxy for the OpenSky live aircraft feed. Fetching here (not in the
- * browser) avoids CORS, lets us cache to respect OpenSky's rate limits, and lets
- * us trim each aircraft's state to the fields we use with rounded numbers. We
- * return *all* airborne aircraft (not a sample) so client-side search can find
- * any flight or airline; the scene still renders a light subset for framerate.
- * Always responds 200 with a (possibly empty) flights array so the layer is
- * never in a broken state.
+ * Server-side proxy for live aircraft, sourced from airplanes.live (a community
+ * ADS-B network, keyless). OpenSky blocks shared cloud IPs, so it fails on
+ * hosts like Vercel; airplanes.live works from serverless. Its API is radius
+ * based (250 nm max), so we query a spread of the world's traffic hotspots in
+ * parallel and merge/de-dupe by ICAO hex. Numbers are converted to our units
+ * (metres, m/s) and rounded. Always responds 200 with a (possibly empty) list.
  */
 
-type State = (number | string | boolean | null)[];
-interface OpenSkyResponse {
-  time: number;
-  states: State[] | null;
+// Traffic-dense points; 250 nm circles around these cover most airborne flights.
+const REGIONS: Array<[number, number]> = [
+  [51, 2], [48, 12], [41, 22], [56, 15], [40, -4], // Europe
+  [41, -75], [33, -84], [39, -95], [37, -119], [44, -79], // North America
+  [20, -100], [-23, -47], [4, -74], // Latin America
+  [25, 52], [22, 78], [28, 70], // Middle East / India
+  [5, 103], [14, 100], [32, 118], [37, 132], // SE + East Asia
+  [-33, 151], [-28, 26], [9, 8], // Australia / Africa
+];
+
+const MAX_FLIGHTS = 20000;
+const KTS_TO_MS = 0.514444;
+const FT_TO_M = 0.3048;
+const FPM_TO_MS = 0.00508; // ft/min -> m/s
+const r4 = (n: number) => Math.round(n * 1e4) / 1e4;
+const ri = (n: number) => Math.round(n);
+
+interface Ac {
+  hex?: string;
+  flight?: string;
+  lat?: number;
+  lon?: number;
+  track?: number;
+  true_heading?: number;
+  alt_baro?: number | string;
+  alt_geom?: number;
+  gs?: number;
+  baro_rate?: number;
+  geom_rate?: number;
+  squawk?: string;
 }
 
-// A hard ceiling so a pathological feed can't blow up the payload.
-const MAX_FLIGHTS = 20000;
-const r4 = (n: number) => Math.round(n * 1e4) / 1e4; // ~11 m of lat/lng precision
-const ri = (n: number) => Math.round(n);
+async function fetchRegion([lat, lon]: [number, number]): Promise<Ac[]> {
+  try {
+    const res = await fetch(
+      `https://api.airplanes.live/v2/point/${lat}/${lon}/250`,
+      {
+        headers: { "User-Agent": "Terra (github.com/abh1shekmishra/terra)" },
+        next: { revalidate: 30 },
+      },
+    );
+    if (!res.ok) return [];
+    const json = (await res.json()) as { ac?: Ac[] };
+    return json.ac ?? [];
+  } catch {
+    return [];
+  }
+}
 
 export async function GET() {
   try {
-    const res = await fetch("https://opensky-network.org/api/states/all", {
-      next: { revalidate: 45 },
-    });
-    if (!res.ok) throw new Error(`OpenSky responded ${res.status}`);
-    const data = (await res.json()) as OpenSkyResponse;
-    const states = data.states ?? [];
+    const groups = await Promise.all(REGIONS.map(fetchRegion));
+    const byHex = new Map<string, unknown>();
 
-    const flights: unknown[] = [];
-    for (const s of states) {
-      const lng = s[5];
-      const lat = s[6];
-      const onGround = s[8];
-      const heading = s[10];
-      if (typeof lat !== "number" || typeof lng !== "number") continue;
-      if (onGround === true) continue;
+    for (const ac of groups.flat()) {
+      const hex = ac.hex;
+      const lat = ac.lat;
+      const lon = ac.lon;
+      if (!hex || typeof lat !== "number" || typeof lon !== "number") continue;
+      if (byHex.has(hex)) continue;
+      const heading = typeof ac.track === "number" ? ac.track : ac.true_heading;
       if (typeof heading !== "number") continue;
-      const alt =
-        typeof s[13] === "number" ? s[13] : typeof s[7] === "number" ? s[7] : 0;
-      flights.push({
-        id: String(s[0]),
-        cs: (typeof s[1] === "string" ? s[1] : "").trim() || "unknown",
-        co: typeof s[2] === "string" ? s[2] : "",
+      // alt_baro is "ground" (string) when on the ground; skip those.
+      const altFt =
+        typeof ac.alt_baro === "number"
+          ? ac.alt_baro
+          : typeof ac.alt_geom === "number"
+            ? ac.alt_geom
+            : null;
+      if (altFt === null) continue;
+      const rateFpm =
+        typeof ac.baro_rate === "number"
+          ? ac.baro_rate
+          : typeof ac.geom_rate === "number"
+            ? ac.geom_rate
+            : 0;
+      byHex.set(hex, {
+        id: hex,
+        cs: (ac.flight ?? "").trim() || "unknown",
+        co: "",
         lat: r4(lat),
-        lng: r4(lng),
+        lng: r4(lon),
         hdg: ri(heading),
-        alt: ri(alt),
-        vel: ri(typeof s[9] === "number" ? s[9] : 0),
-        vr: ri(typeof s[11] === "number" ? s[11] : 0), // vertical rate (m/s)
-        sq: typeof s[14] === "string" ? s[14] : "", // transponder squawk
+        alt: ri(altFt * FT_TO_M),
+        vel: ri((typeof ac.gs === "number" ? ac.gs : 0) * KTS_TO_MS),
+        vr: ri(rateFpm * FPM_TO_MS),
+        sq: typeof ac.squawk === "string" ? ac.squawk : "",
       });
-      if (flights.length >= MAX_FLIGHTS) break;
+      if (byHex.size >= MAX_FLIGHTS) break;
     }
 
+    const flights = [...byHex.values()];
     return NextResponse.json(
-      { time: data.time, total: flights.length, flights },
+      { time: Date.now(), total: flights.length, flights },
       {
         headers: {
-          "Cache-Control": "public, s-maxage=45, stale-while-revalidate=120",
+          "Cache-Control": "public, s-maxage=30, stale-while-revalidate=90",
         },
       },
     );

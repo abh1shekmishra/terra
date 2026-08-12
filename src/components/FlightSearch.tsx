@@ -81,7 +81,7 @@ export default function FlightSearch() {
       ) : (
         data?.flights && (
           <div className="mt-1.5 text-center text-[11px] text-zinc-500">
-            {data.flights.length.toLocaleString()} tracked · via OpenSky
+            {data.flights.length.toLocaleString()} tracked · via airplanes.live
           </div>
         )
       )}

@@ -209,7 +209,7 @@ export default function EarthActivity() {
       </div>
 
       <div className="mt-4 border-t border-white/5 pt-2.5 text-[10px] text-zinc-500">
-        USGS · OpenSky · NASA EONET
+        USGS · airplanes.live · NASA EONET
       </div>
     </div>
   );
