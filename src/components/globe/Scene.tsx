@@ -15,6 +15,7 @@ import FlightRoute, { FlightFocus } from "./FlightRoute";
 import Events from "./Events";
 import Satellites from "./Satellites";
 import Wind from "./Wind";
+import AirQuality from "./AirQuality";
 import PlaceLabels from "./PlaceLabels";
 import { getSunDirection } from "@/lib/sun";
 import { useLayerStore } from "@/store/useLayerStore";
@@ -106,6 +107,7 @@ export default function Scene() {
       </Suspense>
       <Atmosphere />
       {layers.wind && <Wind />}
+      {layers.air && <AirQuality />}
       <PlaceLabels />
       {layers.earthquakes && showPlates && <PlateBoundaries />}
       {layers.earthquakes && <Earthquakes />}

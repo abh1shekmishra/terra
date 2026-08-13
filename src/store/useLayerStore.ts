@@ -16,6 +16,7 @@ export const useLayerStore = create<LayerState>((set) => ({
     events: false,
     satellites: false,
     wind: false,
+    air: false,
   },
   toggle: (id) =>
     set((state) => ({

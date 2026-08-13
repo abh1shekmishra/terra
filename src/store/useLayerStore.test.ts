@@ -10,6 +10,7 @@ describe("useLayerStore", () => {
         events: false,
         satellites: false,
         wind: false,
+        air: false,
       },
     });
   });

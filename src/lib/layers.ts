@@ -9,7 +9,8 @@ export type LayerId =
   | "flights"
   | "events"
   | "satellites"
-  | "wind";
+  | "wind"
+  | "air";
 
 export interface LayerMeta {
   id: LayerId;
@@ -59,6 +60,14 @@ export const LAYERS: LayerMeta[] = [
     description: "Live surface wind flow",
     source: "Open-Meteo",
     color: "#5eead4",
+    available: true,
+  },
+  {
+    id: "air",
+    label: "Air quality",
+    description: "Live PM2.5 / AQI",
+    source: "Open-Meteo",
+    color: "#f97316",
     available: true,
   },
 ];
