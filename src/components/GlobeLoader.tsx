@@ -8,6 +8,7 @@ import { useEvents } from "@/lib/events";
 import { useSatellites } from "@/lib/satellites";
 import { useWind } from "@/lib/wind";
 import { useAirQuality } from "@/lib/airQuality";
+import { useLaunches } from "@/lib/launches";
 
 /**
  * A small status pill over the globe that shows when a layer has been toggled on
@@ -24,6 +25,7 @@ export default function GlobeLoader() {
   const sat = useSatellites(enabled.satellites);
   const wind = useWind(enabled.wind);
   const air = useAirQuality(enabled.air);
+  const launches = useLaunches(enabled.launches);
 
   const isLoading: Record<string, boolean> = {
     earthquakes: enabled.earthquakes && eq.isLoading,
@@ -32,6 +34,7 @@ export default function GlobeLoader() {
     satellites: enabled.satellites && sat.isLoading,
     wind: enabled.wind && wind.isLoading,
     air: enabled.air && air.isLoading,
+    launches: enabled.launches && launches.isLoading,
   };
 
   const loading = LAYERS.filter((l) => isLoading[l.id]);

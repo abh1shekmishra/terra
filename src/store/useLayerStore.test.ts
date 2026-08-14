@@ -11,6 +11,7 @@ describe("useLayerStore", () => {
         satellites: false,
         wind: false,
         air: false,
+        launches: false,
       },
     });
   });

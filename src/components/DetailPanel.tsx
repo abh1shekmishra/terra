@@ -7,6 +7,7 @@ import { feltRadiusKm, magnitudeColor } from "@/lib/earthquakes";
 import { categoryColor } from "@/lib/events";
 import { satelliteColor } from "@/lib/satellites";
 import { useSatcat } from "@/lib/satcat";
+import { launchColor, countdown } from "@/lib/launches";
 import { airlineForCallsign } from "@/data/airlines";
 import { iataFlightNumber } from "@/lib/flightSearch";
 import {
@@ -426,6 +427,95 @@ function SatelliteDetails({
   );
 }
 
+function LaunchDetails({
+  data,
+  onClose,
+}: {
+  data: Extract<Selection, { kind: "launch" }>["data"];
+  onClose: () => void;
+}) {
+  const color = launchColor(data.status);
+  const cd = countdown(data.net);
+  const when = data.net
+    ? new Date(data.net).toLocaleString([], {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "TBD";
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+        <span className="min-w-0 truncate text-sm font-semibold tracking-wide text-zinc-100">
+          {data.mission || data.name}
+        </span>
+        {data.status && (
+          <span
+            className="shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase"
+            style={{ borderColor: `${color}66`, color }}
+          >
+            {data.status}
+          </span>
+        )}
+        <CloseButton onClose={onClose} />
+      </div>
+      <div className="mt-1 text-[11px] text-zinc-400">
+        {data.provider}
+        {data.rocket && ` · ${data.rocket}`}
+      </div>
+
+      {data.image && (
+        <a
+          href={data.url || undefined}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 block overflow-hidden rounded-xl border border-white/10"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={data.image}
+            alt={data.name}
+            className="h-24 w-full object-cover sm:h-36"
+            loading="lazy"
+          />
+        </a>
+      )}
+
+      <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3">
+        <Stat
+          label="Launch"
+          value={
+            <span>
+              {when}
+              {cd && <span className="text-emerald-400"> · {cd}</span>}
+            </span>
+          }
+        />
+        <Stat label="Status" value={data.statusName || data.status || "—"} />
+        {(data.pad || data.location) && (
+          <div className="col-span-2">
+            <Stat
+              label="Pad"
+              value={`${data.pad}${data.location ? `, ${data.location}` : ""}`}
+            />
+          </div>
+        )}
+      </div>
+
+      {data.missionDesc && (
+        <p className="mt-3 border-t border-white/5 pt-2.5 text-[11px] leading-snug text-zinc-400">
+          {data.missionDesc.length > 260
+            ? `${data.missionDesc.slice(0, 260)}…`
+            : data.missionDesc}
+        </p>
+      )}
+      {data.url && <DetailLink href={data.url}>Launch details</DetailLink>}
+    </>
+  );
+}
+
 export default function DetailPanel() {
   const selected = useSelectionStore((s) => s.selected);
   const clear = useSelectionStore((s) => s.clear);
@@ -452,6 +542,9 @@ export default function DetailPanel() {
           )}
           {selected.kind === "satellite" && (
             <SatelliteDetails data={selected.data} onClose={clear} />
+          )}
+          {selected.kind === "launch" && (
+            <LaunchDetails data={selected.data} onClose={clear} />
           )}
         </motion.div>
       )}
