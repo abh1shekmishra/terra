@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
 /**
- * Server-side proxy for live aircraft, sourced from airplanes.live (a community
- * ADS-B network, keyless). OpenSky blocks shared cloud IPs, so it fails on
- * hosts like Vercel; airplanes.live works from serverless. Its API is radius
+ * Server-side proxy for live aircraft, sourced from adsb.lol (a community,
+ * privacy-focused ADS-B network, keyless). OpenSky blocks shared cloud IPs, so
+ * it fails on hosts like Vercel; adsb.lol works from serverless. Its API is radius
  * based (250 nm max), so we query a spread of the world's traffic hotspots in
  * parallel and merge/de-dupe by ICAO hex. Numbers are converted to our units
  * (metres, m/s) and rounded. Always responds 200 with a (possibly empty) list.
@@ -44,7 +44,7 @@ interface Ac {
 async function fetchRegion([lat, lon]: [number, number]): Promise<Ac[]> {
   try {
     const res = await fetch(
-      `https://api.airplanes.live/v2/point/${lat}/${lon}/250`,
+      `https://api.adsb.lol/v2/point/${lat}/${lon}/250`,
       {
         headers: { "User-Agent": "Terra (github.com/abh1shekmishra/terra)" },
         next: { revalidate: 30 },

@@ -35,7 +35,7 @@ export const LAYERS: LayerMeta[] = [
     id: "flights",
     label: "Flights",
     description: "Live air traffic",
-    source: "airplanes.live",
+    source: "adsb.lol",
     color: "#38bdf8",
     available: true,
   },

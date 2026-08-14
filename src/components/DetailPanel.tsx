@@ -314,7 +314,7 @@ function FlightDetails({
         </span>
         <InfoTip
           label="Data sources"
-          text="Position/altitude/speed: airplanes.live ADS-B (real-time). Airline: OpenFlights. Route: adsbdb (scheduled). Aircraft & photo: adsbdb / planespotters. Reference data is not guaranteed current."
+          text="Position/altitude/speed: adsb.lol ADS-B (real-time). Airline: OpenFlights. Route: adsbdb (scheduled). Aircraft & photo: adsbdb / planespotters. Reference data is not guaranteed current."
         />
       </div>
     </>
