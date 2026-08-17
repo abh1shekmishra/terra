@@ -12,6 +12,7 @@ describe("useLayerStore", () => {
         wind: false,
         air: false,
         launches: false,
+        aurora: false,
       },
     });
   });

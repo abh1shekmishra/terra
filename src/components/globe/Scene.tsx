@@ -17,6 +17,7 @@ import Satellites from "./Satellites";
 import Wind from "./Wind";
 import AirQuality from "./AirQuality";
 import Launches from "./Launches";
+import Aurora from "./Aurora";
 import PlaceLabels from "./PlaceLabels";
 import { getSunDirection } from "@/lib/sun";
 import { useLayerStore } from "@/store/useLayerStore";
@@ -110,6 +111,7 @@ export default function Scene() {
       {layers.wind && <Wind />}
       {layers.air && <AirQuality />}
       {layers.launches && <Launches />}
+      {layers.aurora && <Aurora />}
       <PlaceLabels />
       {layers.earthquakes && showPlates && <PlateBoundaries />}
       {layers.earthquakes && <Earthquakes />}

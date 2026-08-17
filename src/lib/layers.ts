@@ -11,7 +11,8 @@ export type LayerId =
   | "satellites"
   | "wind"
   | "air"
-  | "launches";
+  | "launches"
+  | "aurora";
 
 export interface LayerMeta {
   id: LayerId;
@@ -77,6 +78,14 @@ export const LAYERS: LayerMeta[] = [
     description: "Upcoming launches",
     source: "Launch Library 2",
     color: "#fbbf24",
+    available: true,
+  },
+  {
+    id: "aurora",
+    label: "Aurora",
+    description: "Live auroral oval",
+    source: "NOAA SWPC",
+    color: "#4ade80",
     available: true,
   },
 ];
